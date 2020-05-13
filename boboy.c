@@ -4,6 +4,7 @@
 
 #include "cart.h"
 #include "cpu.h"
+#include "gpu.h"
 
 #define PROJECT_NAME "boboy"
 #define VERSION_STR "0.0.1"
@@ -19,8 +20,10 @@ int main(int argc, char **argv) {
     if (cart) print_cart_hdr(&cart->rom.bank0.hdr);
 
     cpu_reset();
+    gpu_init();
     mem_mmap(cart);
     while(1) {
+        gpu_cycle();
         cpu_cycle(); 
 
     }

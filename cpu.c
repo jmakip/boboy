@@ -442,6 +442,32 @@ unsigned ld_mem(uint8_t op0, uint8_t op1, uint8_t op2)
   r8->A = mem_read(cpu.HL);
   return 8;
 }
+// LD A,(HL+)
+unsigned ld_mem_inc(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->A = mem_read(cpu.HL++);
+  return 8;
+}
+// LD (HL), n
+unsigned ld_im_mem(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op2);
+  mem_write(cpu.HL, op1);
+  return 12;
+}
+
+unsigned ld_im_mem_a(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  mem_write((uint16_t)op1+((uint16_t)op2)<<8, r8->A);
+  return 16;
+}
 
 unsigned ld16_im_bc(uint8_t op0, uint8_t op1, uint8_t op2)
 { 
@@ -528,6 +554,28 @@ unsigned ldh_ff00_a(uint8_t op0, uint8_t op1, uint8_t op2)
   struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
   r8->A = mem_read(0xff00+op1);
   return 12;
+}
+
+//Put A into memory address $FF00+C.
+unsigned ldh_ff00_C_a(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  mem_write(0xff00+r8->C, r8->A);
+  return 8;
+}
+
+//Put memory address $FF00+C into A
+unsigned ldh_a_ff00_C(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->A = mem_read(0xff00+r8->C);
+  return 8;
 }
  //TODO
  /* 
@@ -708,7 +756,7 @@ struct op_code ins_set[] = {
   {0x27, 0,  &nop, "TODO"}, //TODO
   {0x28, 1,  &jump_z, "JR Z"},
   {0x29, 0,  &nop, "TODO"}, //TODO
-  {0x2A, 0,  &nop, "TODO"}, //TODO
+  {0x2A, 0,  &ld_mem_inc, "LDI A,(HL)"},
   {0x2B, 0,  &nop, "TODO"}, //TODO
   {0x2C, 0,  &nop, "TODO"}, //TODO
   {0x2D, 0,  &dec_l, "DEC L"},
@@ -716,11 +764,11 @@ struct op_code ins_set[] = {
   {0x2F, 0,  &nop, "TODO"}, //TODO
   {0x30, 1,  &jump_nc, "JR NC"},
   {0x31, 2,  &ld16_im_sp, "LD SP,nn"},
-  {0x32, 0,  &ldd_hl_a, "LDD (HL), A"}, 
+  {0x32, 0,  &ldd_hl_a, "LDD (HL),A"}, 
   {0x33, 0,  &nop, "TODO"}, //TODO
   {0x34, 0,  &nop, "TODO"}, //TODO
   {0x35, 0,  &dec_hl, "DEC (HL)"},
-  {0x36, 0,  &nop, "TODO"}, //TODO
+  {0x36, 1,  &ld_im_mem, "LD (HL),n"}, //TODO
   {0x37, 0,  &nop, "TODO"}, //TODO
   {0x38, 1,  &jump_c, "JR C"}, //TODO
   {0x39, 0,  &nop, "TODO"}, //TODO
@@ -892,7 +940,7 @@ struct op_code ins_set[] = {
   {0xDF, 0,  &nop, "TODO"}, //TODO
   {0xE0, 1,  &ldh_a_ff00, "LDH (n), A"},
   {0xE1, 0,  &nop, "TODO"}, //TODO
-  {0xE2, 0,  &nop, "TODO"}, //TODO
+  {0xE2, 0,  &ldh_ff00_C_a, "LD (FF00+C),A"},
   {0xE3, 0,  &nop, "TODO"}, //TODO
   {0xE4, 0,  &nop, "TODO"}, //TODO
   {0xE5, 0,  &nop, "TODO"}, //TODO
@@ -900,7 +948,7 @@ struct op_code ins_set[] = {
   {0xE7, 0,  &nop, "TODO"}, //TODO
   {0xE8, 0,  &nop, "TODO"}, //TODO
   {0xE9, 0,  &nop, "TODO"}, //TODO
-  {0xEA, 0,  &nop, "TODO"}, //TODO
+  {0xEA, 2,  &ld_im_mem_a, "LD (nn),A"},
   {0xEB, 0,  &nop, "TODO"}, //TODO
   {0xEC, 0,  &nop, "TODO"}, //TODO
   {0xED, 0,  &nop, "TODO"}, //TODO
@@ -908,7 +956,7 @@ struct op_code ins_set[] = {
   {0xEF, 0,  &nop, "TODO"}, //TODO
   {0xF0, 1,  &ldh_ff00_a, "LDH A, (n)"},
   {0xF1, 0,  &nop, "TODO"}, //TODO
-  {0xF2, 0,  &nop, "TODO"}, //TODO
+  {0xF2, 0,  &ldh_a_ff00_C, "LD (FF00+C),A"},
   {0xF3, 0,  &di, "DI"},
   {0xF4, 0,  &nop, "TODO"}, //TODO
   {0xF5, 0,  &nop, "TODO"}, //TODO
@@ -947,6 +995,49 @@ void cpu_reset()
 
 }
 
+void irq_request(uint8_t irq)
+{
+    uint8_t req = mem_read(0xFF0F);
+    switch (irq) {
+    case 0x40:
+        req |= 0x01;
+        break;
+    case 0x48:
+        req |= 0x02;
+        break;
+    case 0x50:
+        req |= 0x04;
+        break;
+    case 0x58:
+        req |= 0x08;
+        break;
+    case 0x60:
+        req |= 0x10;
+        break;
+    default:
+        break;
+    }
+    mem_write(0xFF0F, req); 
+}
+
+
+//interrupt service routine
+//
+// IME is set to 0 
+// two wait states are executed NOP NOP 4+4cycles
+// current PC is pushed to stack  8 cycles
+// PC is set to 0x00(irq) 4 cycle
+//
+//
+unsigned start_isr(uint8_t irq) 
+{
+    ime = 0;
+    mem_write16(cpu.SP, cpu.PC);
+    cpu.SP -= 2;
+    cpu.PC = 0x0000 + irq;
+    return 20;
+}
+
 void cpu_cycle()
 {
     uint8_t op[4];
@@ -971,7 +1062,6 @@ void cpu_cycle()
     //DEBUG
     printf(" 0x%02X, %s OP1:%02X OP2:%02X\n", *op, op_info(*op), op[1], op[2]);
     //hangs at unimplemented
-    if(cpu.PC == 0x237) sleep(1);
     if (!strcmp(op_info(*op),"TODO")) for (;;) sleep(1);
 
 }
