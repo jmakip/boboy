@@ -41,12 +41,32 @@ struct op_code {
 };
 
 struct gb_reg cpu;
+uint32_t ime = 0;
 
 unsigned nop(uint8_t op0, uint8_t op1, uint8_t op2)
 { 
   UNUSED(op0);
   UNUSED(op1);
   UNUSED(op2);
+  return 4;
+}
+
+//TODO interrupts should be disabled only instruction after this.
+//but perhaps most games work without being cycle perfect
+unsigned di(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  ime = 0;
+  return 4;
+}
+unsigned ei(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  ime = 1;
   return 4;
 }
 
@@ -57,7 +77,7 @@ unsigned xor_a(uint8_t op0, uint8_t op1, uint8_t op2)
   UNUSED(op2);
   struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
   r8->A = r8->A ^ r8->A;
-  if (!r8->A) r8->F |= FLAG_Z;
+  r8->F = FLAG_Z;
   return 4;
 }
 /*
@@ -401,6 +421,17 @@ unsigned ld_l(uint8_t op0, uint8_t op1, uint8_t op2)
   return 4;
 }
 
+// LD A,# //not sure about this
+unsigned ld_im(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->A = op1;
+  return 4;
+}
+
 // LD A,(HL)
 unsigned ld_mem(uint8_t op0, uint8_t op1, uint8_t op2)
 { 
@@ -477,6 +508,163 @@ unsigned ldd_a_hl(uint8_t op0, uint8_t op1, uint8_t op2)
   return 8;
 }
 
+//Put A into memory address $FF00+n.
+unsigned ldh_a_ff00(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  mem_write(0xff00+op1, r8->A);
+  return 12;
+}
+
+//Put memory address $FF00+n into A
+unsigned ldh_ff00_a(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->A = mem_read(0xff00+op1);
+  return 12;
+}
+ //TODO
+ /* 
+ CP A BF 4
+ CP B B8 4
+ CP C B9 4
+ CP D BA 4
+ CP E BB 4
+ CP H BC 4
+ CP L BD 4
+ CP (HL) BE 8
+ CP # FE 8
+*/
+// CP A
+unsigned cp_a(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->F = FLAG_Z | FLAG_N;
+
+  return 4;
+}
+
+unsigned cp_b(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->F = FLAG_N;
+  if (r8->A < r8->B) r8->F |= FLAG_C;
+  if (r8->A == r8->B) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - r8->B) & 0x0F) r8->F |= FLAG_H;
+
+  return 4;
+}
+
+unsigned cp_c(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->F = FLAG_N;
+  if (r8->A < r8->C) r8->F |= FLAG_C;
+  if (r8->A == r8->C) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - r8->C) & 0x0F) r8->F |= FLAG_H;
+
+  return 4;
+}
+
+unsigned cp_d(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->F = FLAG_N;
+  if (r8->A < r8->D) r8->F |= FLAG_C;
+  if (r8->A == r8->D) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - r8->D) & 0x0F) r8->F |= FLAG_H;
+
+  return 4;
+}
+
+unsigned cp_e(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->F = FLAG_N;
+  if (r8->A < r8->E) r8->F |= FLAG_C;
+  if (r8->A == r8->E) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - r8->E) & 0x0F) r8->F |= FLAG_H;
+
+  return 4;
+}
+
+unsigned cp_h(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->F = FLAG_N;
+  if (r8->A < r8->H) r8->F |= FLAG_C;
+  if (r8->A == r8->H) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - r8->H) & 0x0F) r8->F |= FLAG_H;
+
+  return 4;
+}
+
+unsigned cp_l(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op1);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  r8->F = FLAG_N;
+  if (r8->A < r8->L) r8->F |= FLAG_C;
+  if (r8->A == r8->L) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - r8->L) & 0x0F) r8->F |= FLAG_H;
+
+  return 4;
+}
+
+unsigned cp_hl(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  uint8_t x = mem_read(cpu.HL);
+  r8->F = FLAG_N;
+  if (r8->A < x) r8->F |= FLAG_C;
+  if (r8->A == x) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - x) & 0x0F) r8->F |= FLAG_H;
+
+  return 8;
+}
+
+unsigned cp_n(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  UNUSED(op0);
+  UNUSED(op2);
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  uint8_t x = op1;
+  r8->F = FLAG_N;
+  if (r8->A < x) r8->F |= FLAG_C;
+  if (r8->A == x) r8->F |= FLAG_Z;
+  if (((r8->A & 0xF0) - x) & 0x0F) r8->F |= FLAG_H;
+
+  return 8;
+}
+
 struct op_code ins_set[] = {
   {0x00, 0,  &nop, "NOP"},
   {0x01, 2,  &ld16_im_bc, "LD BC,nn"},
@@ -540,7 +728,7 @@ struct op_code ins_set[] = {
   {0x3B, 0,  &nop, "TODO"}, //TODO
   {0x3C, 0,  &nop, "TODO"}, //TODO
   {0x3D, 0,  &dec_a, "DEC A"},
-  {0x3E, 0,  &nop, "TODO"}, //TODO
+  {0x3E, 1,  &ld_im, "LD A,#"},
   {0x3F, 0,  &nop, "TODO"}, //TODO
   {0x40, 0,  &nop, "TODO"}, //TODO
   {0x41, 0,  &nop, "TODO"}, //TODO
@@ -662,14 +850,14 @@ struct op_code ins_set[] = {
   {0xB5, 0,  &nop, "TODO"}, //TODO
   {0xB6, 0,  &nop, "TODO"}, //TODO
   {0xB7, 0,  &nop, "TODO"}, //TODO
-  {0xB8, 0,  &nop, "TODO"}, //TODO
-  {0xB9, 0,  &nop, "TODO"}, //TODO
-  {0xBA, 0,  &nop, "TODO"}, //TODO
-  {0xBB, 0,  &nop, "TODO"}, //TODO
-  {0xBC, 0,  &nop, "TODO"}, //TODO
-  {0xBD, 0,  &nop, "TODO"}, //TODO
-  {0xBE, 0,  &nop, "TODO"}, //TODO
-  {0xBF, 0,  &nop, "TODO"}, //TODO
+  {0xB8, 0,  &cp_b, "CP B"},
+  {0xB9, 0,  &cp_c, "CP C"},
+  {0xBA, 0,  &cp_d, "CP D"},
+  {0xBB, 0,  &cp_e, "CP E"},
+  {0xBC, 0,  &cp_h, "CP H"},
+  {0xBD, 0,  &cp_l, "CP L"},
+  {0xBE, 0,  &cp_hl, "CP (HL)"},
+  {0xBF, 0,  &cp_a, "CP A"},
   {0xC0, 0,  &nop, "TODO"}, //TODO
   {0xC1, 0,  &nop, "TODO"}, //TODO
   {0xC2, 0,  &nop, "TODO"}, //TODO
@@ -702,7 +890,7 @@ struct op_code ins_set[] = {
   {0xDD, 0,  &nop, "TODO"}, //TODO
   {0xDE, 0,  &nop, "TODO"}, //TODO
   {0xDF, 0,  &nop, "TODO"}, //TODO
-  {0xE0, 0,  &nop, "TODO"}, //TODO
+  {0xE0, 1,  &ldh_a_ff00, "LDH (n), A"},
   {0xE1, 0,  &nop, "TODO"}, //TODO
   {0xE2, 0,  &nop, "TODO"}, //TODO
   {0xE3, 0,  &nop, "TODO"}, //TODO
@@ -718,10 +906,10 @@ struct op_code ins_set[] = {
   {0xED, 0,  &nop, "TODO"}, //TODO
   {0xEE, 0,  &nop, "TODO"}, //TODO
   {0xEF, 0,  &nop, "TODO"}, //TODO
-  {0xF0, 0,  &nop, "TODO"}, //TODO
+  {0xF0, 1,  &ldh_ff00_a, "LDH A, (n)"},
   {0xF1, 0,  &nop, "TODO"}, //TODO
   {0xF2, 0,  &nop, "TODO"}, //TODO
-  {0xF3, 0,  &nop, "TODO"}, //TODO
+  {0xF3, 0,  &di, "DI"},
   {0xF4, 0,  &nop, "TODO"}, //TODO
   {0xF5, 0,  &nop, "TODO"}, //TODO
   {0xF6, 0,  &nop, "TODO"}, //TODO
@@ -729,10 +917,10 @@ struct op_code ins_set[] = {
   {0xF8, 0,  &nop, "TODO"}, //TODO
   {0xF9, 0,  &nop, "TODO"}, //TODO
   {0xFA, 0,  &nop, "TODO"}, //TODO
-  {0xFB, 0,  &nop, "TODO"}, //TODO
+  {0xFB, 0,  &ei, "EI"},
   {0xFC, 0,  &nop, "TODO"}, //TODO
   {0xFD, 0,  &nop, "TODO"}, //TODO
-  {0xFE, 0,  &nop, "TODO"}, //TODO
+  {0xFE, 1,  &cp_n, "CP n"},
   {0xFF, 0,  &nop, "TODO"}, //TODO
 };
 
@@ -781,7 +969,9 @@ void cpu_cycle()
     ins_set[*op].op_call(op[0], op[1], op[2]);
 
     //DEBUG
-    printf("0x%02X, %s\n", *op, op_info(*op));
-    //sleep(1);
+    printf(" 0x%02X, %s OP1:%02X OP2:%02X\n", *op, op_info(*op), op[1], op[2]);
+    //hangs at unimplemented
+    if(cpu.PC == 0x237) sleep(1);
+    if (!strcmp(op_info(*op),"TODO")) for (;;) sleep(1);
 
 }
