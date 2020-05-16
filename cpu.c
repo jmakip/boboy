@@ -516,9 +516,37 @@ unsigned jr_n(uint8_t op0, uint8_t op1, uint8_t op2)
   return 8;
 }
 
+unsigned jump_c2(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  if (!(r8->F & FLAG_Z))
+    cpu.PC = (uint16_t)op1+(((uint16_t)op2)<<8);
+  return 12;
+}
 unsigned jump_c3(uint8_t op0, uint8_t op1, uint8_t op2)
 { 
   cpu.PC = (uint16_t)op1+(((uint16_t)op2)<<8);
+  return 12;
+}
+unsigned jump_ca(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  if ((r8->F & FLAG_Z))
+    cpu.PC = (uint16_t)op1+(((uint16_t)op2)<<8);
+  return 12;
+}
+unsigned jump_d2(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  if (!(r8->F & FLAG_C))
+    cpu.PC = (uint16_t)op1+(((uint16_t)op2)<<8);
+  return 12;
+}
+unsigned jump_da(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+  struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+  if ((r8->F & FLAG_C))
+    cpu.PC = (uint16_t)op1+(((uint16_t)op2)<<8);
   return 12;
 }
 unsigned rst(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -530,12 +558,13 @@ unsigned rst(uint8_t op0, uint8_t op1, uint8_t op2)
     cpu.PC = 0x0000 + (op0-0xc7);
     return 24;
 }
+
 unsigned call(uint8_t op0, uint8_t op1, uint8_t op2)
 { 
     UNUSED(op0);
     mem_write16(cpu.SP, cpu.PC);
     cpu.SP -= 2;
-    cpu.PC = (uint16_t)op1+(((uint16_t)op2)<<8);
+    cpu.PC = (uint16_t)op1 + (((uint16_t)op2) << 8);
     return 12;
 }
 unsigned ret(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -545,6 +574,16 @@ unsigned ret(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op2);
     cpu.PC = mem_read16(cpu.SP);
     cpu.SP += 2;
+    return 8;
+}
+unsigned reti(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+    UNUSED(op0);
+    UNUSED(op1);
+    UNUSED(op2);
+    cpu.PC = mem_read16(cpu.SP);
+    cpu.SP += 2;
+    ime = 1;
     return 8;
 }
 unsigned ret_nz(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -1388,6 +1427,16 @@ unsigned ld_im_mem_a(uint8_t op0, uint8_t op1, uint8_t op2)
   struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
   mem_write(((uint16_t)op1+((uint16_t)op2))<<8, r8->A);
   return 16;
+}
+// LD A,(nn)
+unsigned ld_a_im_mem(uint8_t op0, uint8_t op1, uint8_t op2)
+{ 
+    UNUSED(op0);
+    UNUSED(op1);
+    UNUSED(op2);
+    struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+    r8->A = mem_read(((uint16_t)op1 + ((uint16_t)op2)) << 8);
+    return 16;
 }
 // LD (nn), SP
 unsigned ld_im_mem_sp(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -2654,15 +2703,15 @@ struct op_code ins_set[] = {
   {0xBF, 0,  &cp_a, "CP A"},
   {0xC0, 0,  &ret_nz, "RET NZ"},
   {0xC1, 0,  &nop, "TODO"}, //TODO
-  {0xC2, 0,  &nop, "TODO"}, //TODO
-  {0xC3, 2,  &jump_c3, "JUMP nn"}, 
+  {0xC2, 2,  &jump_c2, "JP NZ,nn"},
+  {0xC3, 2,  &jump_c3, "JP nn"}, 
   {0xC4, 0,  &nop, "TODO"}, //TODO
   {0xC5, 0,  &nop, "TODO"}, //TODO
   {0xC6, 1,  &add_n, "ADD #"},
   {0xC7, 0,  &rst, "RST C7"},
   {0xC8, 0,  &ret_z, "RET Z"},
   {0xC9, 0,  &ret, "RET"},
-  {0xCA, 0,  &nop, "TODO"}, //TODO
+  {0xCA, 2,  &jump_ca, "JP Z,nn"},
   {0xCB, 1,  &cb, "0xCB"},
   {0xCC, 0,  &nop, "TODO"}, //TODO
   {0xCD, 2,  &call, "CALL nn"},
@@ -2670,15 +2719,15 @@ struct op_code ins_set[] = {
   {0xCF, 0,  &rst, "RST CF"},
   {0xD0, 0,  &ret_nc, "RET NC"},
   {0xD1, 0,  &nop, "TODO"}, //TODO
-  {0xD2, 0,  &nop, "TODO"}, //TODO
+  {0xD2, 2,  &jump_d2, "JP NC,nn"},
   {0xD3, 0,  &nop, "TODO"}, //TODO
   {0xD4, 0,  &nop, "TODO"}, //TODO
   {0xD5, 0,  &nop, "TODO"}, //TODO
   {0xD6, 1,  &sub_n, "SUB n"},
   {0xD7, 0,  &rst, "RST D7"},
   {0xD8, 0,  &ret_c, "RET C"},
-  {0xD9, 0,  &nop, "TODO"}, //TODO
-  {0xDA, 0,  &nop, "TODO"}, //TODO
+  {0xD9, 0,  &reti, "RETI"}, //TODO
+  {0xDA, 2,  &jump_da, "JP C,nn"},
   {0xDB, 0,  &nop, "TODO"}, //TODO
   {0xDC, 0,  &nop, "TODO"}, //TODO
   {0xDD, 0,  &nop, "TODO"}, //TODO
@@ -2710,7 +2759,7 @@ struct op_code ins_set[] = {
   {0xF7, 0,  &nop, "TODO"}, //TODO
   {0xF8, 0,  &nop, "TODO"}, //TODO
   {0xF9, 0,  &nop, "TODO"}, //TODO
-  {0xFA, 0,  &nop, "TODO"}, //TODO
+  {0xFA, 2,  &ld_a_im_mem, "LD A,(nn)"},
   {0xFB, 0,  &ei, "EI"},
   {0xFC, 0,  &nop, "TODO"}, //TODO
   {0xFD, 0,  &nop, "TODO"}, //TODO
@@ -2805,7 +2854,7 @@ void cpu_cycle()
     //if not halted
     //if prev op cycles expired
     //DEBUG
-dbg_pc_sp();
+//dbg_pc_sp();
 
     *p++ = mem_read(cpu.PC++);
     width = op_width(*op);
@@ -2816,8 +2865,8 @@ dbg_pc_sp();
     ins_set[*op].op_call(op[0], op[1], op[2]);
 
     //DEBUG
-dbg_reg();
-dbg_op(*op, op[1], op[2]);
+//dbg_reg();
+//dbg_op(*op, op[1], op[2]);
     //hangs at unimplemented
     if (!strcmp(op_info(*op),"TODO")) {
         cpu.PC--;
@@ -2827,7 +2876,7 @@ dbg_op(*op, op[1], op[2]);
         exit(1);
         //for (;;) sleep(1);
     }
-    //if(cpu.PC > 0x2000) sleep(1);
+    if (cpu.PC == 0x190) exit(1);
     
 
 }

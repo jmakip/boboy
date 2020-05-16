@@ -81,8 +81,10 @@ void mem_write16(uint16_t addr, uint16_t d)
 void mem_mmap(struct gbc_cart *cartridge) 
 {
     cart = cartridge;
-    memcpy(map.rom_bank00, &cart->rom.bank0, 0x4000);
-    memcpy(map.rom_bank01, &cart->rom.bank[1], 0x4000);
+//    memcpy(map.rom_bank00, &cart->rom.bank0, 0x4000);
+//    memcpy(map.rom_bank01, cart->rom.bank[1].data, 0x4000);
+////DEBUG
+    memcpy(map.rom_bank00, &cart->rom.bank0, 0x8000);
 
 }
 void mem_munmap() 
