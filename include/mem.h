@@ -1,11 +1,8 @@
 #ifndef __MEM_H__
 #define __MEM_H__
 
-
 void mem_mmap(struct gbc_cart *cartridge);
-void mem_munmap(); 
-
-
+void mem_munmap();
 
 //cpu connects with these
 uint8_t mem_read(uint16_t addr);
