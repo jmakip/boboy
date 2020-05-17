@@ -1,3 +1,6 @@
+#ifndef __CART_H_
+#define __CART_H_
+
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -71,3 +74,5 @@ struct gbc_cart *load_rom(const char *path);
 //copies .sav file into gbc_cart ram region
 //unsigned load_nvram(gbc_cart *cart, const char *path);
 void print_cart_hdr(struct cart_hdr *hdr);
+
+#endif

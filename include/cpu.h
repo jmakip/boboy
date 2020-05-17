@@ -3,7 +3,7 @@
 
 void cpu_reset();
 
-void cpu_cycle();
+unsigned cpu_cycle();
 
 void irq_request(uint8_t irq);
 

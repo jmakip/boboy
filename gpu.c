@@ -5,9 +5,8 @@
 #include "gpu.h"
 #include "cpu.h"
 
-enum { H_BLANK = 0, V_BLANK = 1, OAM = 2, OAM_VRAM = 3 };
-
 enum {
+    LCDC_CTRL = 0xFF40,
     LCDC_STAT = 0xFF41,
     LCDC_SCY = 0xFF42,
     LCDC_SCX = 0xFF42,
@@ -18,6 +17,27 @@ enum {
     LCDC_OBP1 = 0xFF49,
     LCDC_WY = 0xFF4A,
 };
+
+//CTRL register bits
+#define LCD_ENABLE      0x80
+#define WDW_TILE_SEL    0x40 // 0=9800, 1=9c00
+#define WDW_ENABLE      0x20
+#define BG_WDW_DATA_SEL 0x10 // 0=8800, 1=8000
+#define BG_TILE_SEL     0x08 // 0=9800, 1=9c000
+#define SPRITE_SIZE     0x04 // 0=8x8, 1=8x16
+#define SPRITE_ENABLE   0x02
+#define BG_WDW_PRIO     0x01
+
+//STAT register bits
+#define STAT_MODE     0x03 // Current state
+#define STAT_COINC    0x04 // Set when LYC==LY
+#define STAT_H_IE     0x08 // H_BLANK irq enable
+#define STAT_V_IE     0x10 // V_BLANK irq enable
+#define STAT_OAM_IE   0x20 // OAM irq enable
+#define STAT_COINC_IE 0x40 // LYC==LY irq enable
+
+//STAT_MODE BITS
+enum { H_BLANK = 0, V_BLANK = 1, OAM = 2, OAM_VRAM = 3 };
 
 // frame is 154 scanlines, 70224 dots or 16.74ms
 // scanlines 0 - 143 consist of display data
@@ -64,11 +84,15 @@ void gpu_init()
     get_time(&prev);
 }
 
-void gpu_cycle()
+//Render buffer should be updated pixel at time since LCDC_CTRL can change even between
+//lines and pixels
+unsigned gpu_cycle()
 {
     struct timespec now;
     uint64_t diff = 16740000;
     uint8_t stat = mem_read(LCDC_STAT);
+    uint8_t lyc = mem_read(LCDC_STAT);
+    scanline = mem_read(LCDC_LY);
     if (!v_dot && !scanline) {
         //get_time(&now);
         //diff = elapsed_nano(&prev, &now);
@@ -76,21 +100,18 @@ void gpu_cycle()
 
         //get_time(&prev);
     }
+    if (lyc == scanline) stat |= 0x04;
+    else stat &= 0xFB;
+
     //OAM
     if (!v_dot) {
-        if (stat & 0x20) irq_request(0x48);
-        stat &= 0xFC;
-        stat |= OAM;
-        mem_write(LCDC_STAT, stat);
+        if (stat & STAT_OAM_IE) irq_request(0x48);
+        stat = (stat & 0xFC) | OAM;
     } else if (v_dot == 80) {
-        stat &= 0xFC;
-        stat |= OAM_VRAM;
-        mem_write(LCDC_STAT, stat);
+        stat = (stat & 0xFC) | OAM_VRAM;
     } else if (v_dot == 248) {
-        if (stat & 0x04) irq_request(0x48);
-        stat &= 0xFC;
-        stat |= H_BLANK;
-        mem_write(LCDC_STAT, stat);
+        if (stat & STAT_H_IE) irq_request(0x48);
+        stat = (stat & 0xFC) | H_BLANK;
     }
     if (v_dot >= 455) {
         v_dot = 0;
@@ -101,12 +122,12 @@ void gpu_cycle()
     }
 
     if (scanline == 144) {
-        if (stat & 0x10) irq_request(0x40);
-        stat &= 0xFC;
-        stat |= V_BLANK;
-        mem_write(LCDC_STAT, stat);
+        if (stat & STAT_V_IE) irq_request(0x40);
+        stat = (stat & 0xFC) | V_BLANK;
 
         //call_actual_draw();
     }
+    mem_write(LCDC_STAT, stat);
     mem_write(LCDC_LY, scanline);
+    return v_dot+scanline;
 }
