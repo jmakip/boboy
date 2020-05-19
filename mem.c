@@ -29,7 +29,7 @@ struct mem_map {
     uint8_t ier[0x01];
 };
 
-#define OAM_DMA 0xFF46
+#define OAM_DMA   0xFF46
 #define SERIAL_SB 0xFF01
 #define SERIAL_SC 0xFF02
 
@@ -50,7 +50,6 @@ uint16_t mem_read16(uint16_t addr)
     result = data[addr] + (data[addr + 1] << 8);
     return result;
 }
-
 void mem_write(uint16_t addr, uint8_t d)
 {
     //TODO add some checks
@@ -61,8 +60,9 @@ void mem_write(uint16_t addr, uint8_t d)
         memcpy(data + 0XFE00, data + ((uint16_t)(d) << 8), 0xF1);
     }
     if (addr == SERIAL_SC) {
-        printf("%c", data + SERIAL_SB);
-        return;
+        if (d & 0x80) printf("%c", data + SERIAL_SB);
+
+        d &= 0x7F;
     }
     data[addr] = d;
 }
@@ -77,6 +77,13 @@ void mem_write16(uint16_t addr, uint16_t d)
     data += addr;
     p = (uint16_t *)data; //not sure are unaligned access ok
     p[0] = d;
+}
+
+void dump_mem()
+{
+    FILE *f = fopen("dump.bin", "w");
+    fwrite(&map, sizeof(struct mem_map), 1, f);
+    fclose(f);
 }
 
 void mem_mmap(struct gbc_cart *cartridge)

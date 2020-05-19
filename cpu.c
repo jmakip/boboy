@@ -882,7 +882,139 @@ unsigned ret_c(uint8_t op0, uint8_t op1, uint8_t op2)
 
 unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
 {
-    UNUSED(op0);
+    //0x00 - 0x07 RLC
+    //0x08 - 0x0F RRC
+    //0x10 - 0x17 RL
+    //0x18 - 0x1F RR
+    //0x20 - 0x27 SLA
+    //0x28 - 0x2F SRA
+    //0x30 - 0x37 SWAP
+    //0x38 - 0x3F SRL
+    //0x40 - 0x7F BIT u3,r8
+    //0x80 - 0xBF RES u3,r8
+    //0xC0 - 0xFF SET u3,r8
+    struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+    switch (op1) {
+    case 0x19: 
+        {
+            uint8_t b7 = (r8->F & FLAG_C) << 3;
+            r8->F = (r8->C & 0x01) ? FLAG_C : 0;
+            r8->C = b7 | ((r8->C >> 1) & 0x7F);
+            if (!r8->C) r8->F |= FLAG_Z;
+        }
+        break;
+    case 0x1A: 
+        {
+            uint8_t b7 = (r8->F & FLAG_C) << 3;
+            r8->F = (r8->D & 0x01) ? FLAG_C : 0;
+            r8->D = b7 | ((r8->D >> 1) & 0x7F);
+            if (!r8->D) r8->F |= FLAG_Z;
+        }
+        break;
+    case 0x30:
+        r8->B = (r8->B >> 4) | (r8->B << 4);
+        r8->F = (r8->B) ? 0 : FLAG_Z;
+        break;
+    case 0x31:
+        r8->C = (r8->C >> 4) | (r8->C << 4);
+        r8->F = (r8->C) ? 0 : FLAG_Z;
+        break;
+    case 0x32:
+        r8->D = (r8->D >> 4) | (r8->D << 4);
+        r8->F = (r8->D) ? 0 : FLAG_Z;
+        break;
+    case 0x33:
+        r8->E = (r8->E >> 4) | (r8->E << 4);
+        r8->F = (r8->E) ? 0 : FLAG_Z;
+        break;
+    case 0x34:
+        r8->H = (r8->H >> 4) | (r8->H << 4);
+        r8->F = (r8->H) ? 0 : FLAG_Z;
+        break;
+    case 0x35:
+        r8->L = (r8->L >> 4) | (r8->L << 4);
+        r8->F = (r8->L) ? 0 : FLAG_Z;
+        break;
+    case 0x37:
+        r8->A = (r8->A >> 4) | (r8->A << 4);
+        r8->F = (r8->A) ? 0 : FLAG_Z;
+        break;
+    case 0x38:
+        r8->F = (r8->B & 0x01);
+        r8->B = (r8->B >> 1) & 0x7F;
+        r8->F |= (r8->B) ? 0 : FLAG_Z;
+        break;
+    case 0x39:
+        r8->F = (r8->C & 0x01);
+        r8->C = (r8->C >> 1) & 0x7F;
+        r8->F |= (r8->C) ? 0 : FLAG_Z;
+        break;
+    case 0x3A:
+        r8->F = (r8->D & 0x01);
+        r8->D = (r8->D >> 1) & 0x7F;
+        r8->F |= (r8->D) ? 0 : FLAG_Z;
+        break;
+    case 0x3B:
+        r8->F = (r8->E & 0x01);
+        r8->E = (r8->E >> 1) & 0x7F;
+        r8->F |= (r8->E) ? 0 : FLAG_Z;
+        break;
+    case 0x3C:
+        r8->F = (r8->H & 0x01);
+        r8->H = (r8->H >> 1) & 0x7F;
+        r8->F |= (r8->H) ? 0 : FLAG_Z;
+        break;
+    case 0x3D:
+        r8->F = (r8->L & 0x01);
+        r8->L = (r8->L >> 1) & 0x7F;
+        r8->F |= (r8->L) ? 0 : FLAG_Z;
+        break;
+    case 0x3F:
+        r8->F = (r8->A & 0x01);
+        r8->A = (r8->A >> 1) & 0x7F;
+        r8->F |= (r8->A) ? 0 : FLAG_Z;
+        break;
+    case 0x54:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x04)) r8->F |= FLAG_Z;
+        break;
+    case 0x6C:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x20)) r8->F |= FLAG_Z;
+        break;
+    case 0x5A:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->D & 0x08)) r8->F |= FLAG_Z;
+        break;
+        //RES u3,r8
+    case 0x80:
+        r8->B &= 0xFE;
+        break;
+    case 0x81:
+        r8->C &= 0xFE;
+        break;
+    case 0x82:
+        r8->D &= 0xFE;
+    case 0x83:
+        r8->E &= 0xFE;
+        break;
+    case 0x84:
+        r8->H &= 0xFE;
+        break;
+    case 0x85:
+        r8->L &= 0xFE;
+        break;
+    case 0x87:
+        r8->A &= 0xFE;
+        break;
+
+    default:
+        printf("TODO CB %02X\n", op1);
+        exit(2);
+    }
     UNUSED(op1);
     UNUSED(op2);
     return 8;
@@ -3039,12 +3171,43 @@ void cpu_reset()
 {
     //this is crude reset with some default values to force jump into rom
     //real cpu should have BIOS rom that set these up and loads cart into rom
-    cpu.AF = 0x1100; //
-    cpu.BC = 0x0100;
+    cpu.AF = 0x01B0; //
+    cpu.BC = 0x0013;
     cpu.DE = 0x0008;
-    cpu.HL = 0x007c; //0x014D;
-    cpu.SP = 0xCFFE; //Stack Pointer=$FFFE
+    cpu.HL = 0x014D; //0x014D;
+    cpu.SP = 0xCFFE; //0xFFFE; //Stack Pointer=$FFFE
     cpu.PC = 0x0100; //
+    mem_write(0xFF05, 0x00); //  [$FF05] = $00   ; TIMA
+    mem_write(0xFF06, 0x00); //  [$FF06] = $00   ; TMA
+    mem_write(0xFF07, 0x00); //  [$FF07] = $00   ; TAC
+    mem_write(0xFF10, 0x80); //  [$FF10] = $80   ; NR10
+    mem_write(0xFF11, 0xBF); //  [$FF11] = $BF   ; NR11
+    mem_write(0xFF12, 0xF3); //  [$FF12] = $F3   ; NR12
+    mem_write(0xFF14, 0xBF); //  [$FF14] = $BF   ; NR14
+    mem_write(0xFF16, 0x3F); //  [$FF16] = $3F   ; NR21
+    mem_write(0xFF17, 0x00); //  [$FF17] = $00   ; NR22
+    mem_write(0xFF19, 0xBF); //  [$FF19] = $BF   ; NR24
+    mem_write(0xFF1A, 0x7F); //  [$FF1A] = $7F   ; NR30
+    mem_write(0xFF1B, 0xFF); //  [$FF1B] = $FF   ; NR31
+    mem_write(0xFF1C, 0x9F); //  [$FF1C] = $9F   ; NR32
+    mem_write(0xFF1E, 0xBF); //  [$FF1E] = $BF   ; NR33
+    mem_write(0xFF20, 0xFF); //  [$FF20] = $FF   ; NR41
+    mem_write(0xFF21, 0x00); //  [$FF21] = $00   ; NR42
+    mem_write(0xFF22, 0x00); //  [$FF22] = $00   ; NR43
+    mem_write(0xFF23, 0xBF); //  [$FF23] = $BF   ; NR44
+    mem_write(0xFF24, 0x77); //  [$FF24] = $77   ; NR50
+    mem_write(0xFF25, 0xF3); //  [$FF25] = $F3   ; NR51
+    mem_write(0xFF26, 0xF1); //  [$FF26] = $F1-GB, $F0-SGB ; NR52
+    mem_write(0xFF40, 0x91); //  [$FF40] = $91   ; LCDC
+    mem_write(0xFF42, 0x00); //  [$FF42] = $00   ; SCY
+    mem_write(0xFF43, 0x00); //  [$FF43] = $00   ; SCX
+    mem_write(0xFF45, 0x00); //  [$FF45] = $00   ; LYC
+    mem_write(0xFF47, 0xFC); //  [$FF47] = $FC   ; BGP
+    mem_write(0xFF48, 0xFF); //  [$FF48] = $FF   ; OBP0
+    mem_write(0xFF49, 0xFF); //  [$FF49] = $FF   ; OBP1
+    mem_write(0xFF4A, 0x00); //  [$FF4A] = $00   ; WY
+    mem_write(0xFF4B, 0x00); //  [$FF4B] = $00   ; WX
+    mem_write(0xFFFF, 0x00); //  [$FFFF] = $00   ; IE
 }
 
 void irq_request(uint8_t irq)
@@ -3101,6 +3264,13 @@ void dbg_op(uint8_t op0, uint8_t op1, uint8_t op2)
 {
     printf(" 0x%02X, %s OP1:%02X OP2:%02X\n", op0, op_info(op0), op1, op2);
 }
+void print_reg() 
+{
+    printf("PC 0x%04X: SP 0x%04X, ", cpu.PC, cpu.SP);
+    printf("AF 0x%04X, BC 0x%04X, DE 0x%04X, HL 0x%04X,", cpu.AF, cpu.BC,
+           cpu.DE, cpu.HL);
+    printf("\n");
+}
 
 unsigned cpu_cycle()
 {
@@ -3141,20 +3311,20 @@ unsigned cpu_cycle()
     //if not halted
     //if prev op cycles expired
     //DEBUG
-    dbg_pc_sp();
+    //   dbg_pc_sp();
 
     *p++ = mem_read(cpu.PC++);
     width = op_width(*op);
 
     if (width > 1) *p++ = mem_read(cpu.PC++);
     if (width) *p++ = mem_read(cpu.PC++);
-    dbg_pc_sp();
+    //    dbg_pc_sp();
 
     cycles = ins_set[*op].op_call(op[0], op[1], op[2]);
 
     //DEBUG
     //dbg_reg();
-    dbg_op(*op, op[1], op[2]);
+    //   dbg_op(*op, op[1], op[2]);
     //hangs at unimplemented
     if (!strcmp(op_info(*op), "TODO")) {
         cpu.PC--;

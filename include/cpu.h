@@ -7,4 +7,6 @@ unsigned cpu_cycle();
 
 void irq_request(uint8_t irq);
 
+void print_reg();
+
 #endif

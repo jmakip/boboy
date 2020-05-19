@@ -7,7 +7,7 @@
 #include "gpu.h"
 
 #define PROJECT_NAME "boboy"
-#define VERSION_STR "0.0.1"
+#define VERSION_STR  "0.0.1"
 
 int main(int argc, char **argv)
 {
@@ -20,7 +20,6 @@ int main(int argc, char **argv)
     }
     cart = load_rom(argv[argc - 1]);
     if (cart) print_cart_hdr(&cart->rom.bank0.hdr);
-
 
     init_window();
     cpu_reset();
