@@ -47,18 +47,20 @@ uint32_t bg_map[65536];
 //bg map can change between scanlines since LCDC_CTRL can be written any time
 //and SCY SCX can be changed between scanlines
 //but lets do just simple version
-uint16_t tile_data_offset(uint16_t mapping, uint16_t block, uint8_t index)
+uint16_t tile_data_offset(uint16_t mapping, uint16_t block, uint16_t index)
 {
     uint8_t offset;
+    uint16_t address;
     offset = mem_read(mapping + index);
-    //    printf("index %d, mapping %04X, block %04X offset %d\n",index, mapping,block,offset);
 
     if (block == 0x8000)
-        return 0x8000 + offset * 16;
+        address = 0x8000 + (uint16_t)offset * 16;
     else if (offset > 127)
-        return 0x8800 + (offset - 127) * 16;
+        address = 0x8800 + (uint16_t)(offset - 127) * 16;
     else
-        return 0x9000 + offset * 16;
+        address = 0x9000 + (uint16_t)offset * 16;
+
+    return address;
 }
 
 void get_bg_map(void *dest)
@@ -67,7 +69,7 @@ void get_bg_map(void *dest)
 }
 void assemble_bg_map()
 {
-    uint8_t ty, tx, bg_y, bg_x;
+    uint16_t ty, tx, bg_y, bg_x;
     uint16_t bg_width = 256;
     uint16_t index = 0;
     uint16_t data_addr;
