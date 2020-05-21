@@ -93,7 +93,7 @@ void poll_events()
                 dump_mem();
             } else if (e.key.keysym.sym == SDLK_1) {
                 print_reg();
-            } else 
+            } else
                 printf("keydown key sym: %d\n", e.key.keysym.sym);
         }
     }

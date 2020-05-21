@@ -156,21 +156,15 @@ unsigned gpu_cycle()
     uint8_t lyc = mem_read(LCDC_LYC);
     uint8_t lcdc = mem_read(LCDC_CTRL);
     scanline = mem_read(LCDC_LY);
-    if (v_dot >= 455) {
+    if (!(lcdc & LCD_ENABLE)) return 1;
+
+    if (++v_dot >= 455) {
         v_dot = 0;
-        scanline++;
-        if (scanline > 153) {
+        if (++scanline > 153) {
             scanline = 0;
             if (diff < 16750000LL) nsleep(diff);
         }
-    } else {
-        v_dot++;
     }
-    if (!(lcdc & LCD_ENABLE)) return 1;
-    if (lyc == scanline)
-        stat |= 0x04;
-    else
-        stat &= 0xFB;
 
     if (scanline >= 144) {
         if (scanline == 144) {
@@ -191,11 +185,16 @@ unsigned gpu_cycle()
         if (stat & STAT_H_IE) irq_request(0x48);
         stat = (stat & 0xFC) | H_BLANK;
     }
+    if (lyc == scanline) {
+        stat |= STAT_COINC;
+        if (stat & STAT_COINC_IE) irq_request(0x48);
+    } else
+        stat &= ~(STAT_COINC);
 
     mem_write(LCDC_STAT, stat);
     mem_write(LCDC_LY, scanline);
-    if (scanline == 143 && v_dot == 200)
-        return 0;
-    else
-        return 1;
+
+    if (scanline == 143 && v_dot == 200) return 0;
+
+    return 1;
 }
