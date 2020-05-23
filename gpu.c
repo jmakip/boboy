@@ -75,7 +75,7 @@ void assemble_bg_map()
     uint16_t data_addr;
     uint16_t mapping_addr;
     uint8_t lcdc = mem_read(LCDC_CTRL);
-    printf("ldcd %02X \n", lcdc);
+    //printf("ldcd %02X \n", lcdc);
     data_addr = ((lcdc & BG_WDW_DATA_SEL)) ? 0x8000 : 0x8800;
     mapping_addr = ((lcdc & BG_TILE_SEL)) ? 0x9C00 : 0x9800;
     if (!(lcdc & BG_WDW_PRIO)) return;
@@ -129,7 +129,7 @@ void get_time(struct timespec *t)
 uint64_t elapsed_nano(struct timespec *tstart, struct timespec *tend)
 {
     uint64_t nano;
-    printf("2.5\n");
+    //printf("2.5\n");
     return 1;
     if (tend->tv_sec > tstart->tv_sec + 1) //over second diff just return second
         return 1000000000LL;
@@ -164,12 +164,12 @@ unsigned gpu_cycle()
         v_dot = 0;
         if (++scanline > 153) {
             scanline = 0;
-            if (diff < 16750000LL) nsleep(diff);
+            //if (diff < 16750000LL) nsleep(diff);
         }
     }
 
-    if (scanline >= 144) {
-        if (scanline == 144) {
+    if (scanline >= 143) {
+        if (scanline == 143 && !v_dot) {
             //if (stat & STAT_V_IE) irq_request(0x40);
             //V_BLANK should trigger both 0x40 and 0x48 interrupts?
             irq_request(0x40);

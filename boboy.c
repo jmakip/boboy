@@ -5,6 +5,7 @@
 #include "cart.h"
 #include "cpu.h"
 #include "gpu.h"
+#include "timer.h"
 
 #define PROJECT_NAME "boboy"
 #define VERSION_STR  "0.0.1"
@@ -27,6 +28,7 @@ int main(int argc, char **argv)
     mem_mmap(cart);
     while (1) {
         poll_events();
+        timer_tick();
         if (!gpu_cycle()) render_tilemap();
 
         if (!next_cycle) next_cycle = cpu_cycle();

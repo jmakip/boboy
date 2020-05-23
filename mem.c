@@ -1,4 +1,5 @@
 #include "cart.h"
+#include "cpu.h"
 
 //General Memory Map
 //  0000-3FFF   16KB ROM Bank 00     (in cartridge, fixed at bank 00)
@@ -60,9 +61,24 @@ void mem_write(uint16_t addr, uint8_t d)
         memcpy(data + 0XFE00, data + ((uint16_t)(d) << 8), 0xF1);
     }
     if (addr == SERIAL_SC) {
-        if (d & 0x80) printf("%c", data + SERIAL_SB);
+        if (d & 0x80) {
+            printf("%c", data + SERIAL_SB);
+            //todo isr should be 8 bit clocks after
+            irq_request(0x58);
+        }
 
         d &= 0x7F;
+    } else if (addr >= 0x2000 && addr <= 0x3FFF) {
+        printf("TODO SWITCHING ROM BANK 0x%02X\n", d);
+        print_reg();
+        return;
+    } else if (addr >= 0x4000 && addr <= 0x5FFF) {
+        printf("TODO SWITCHING RAM BANK 0x%02X\n", d);
+        print_reg();
+        return;
+    } else if (addr >= 0x6000 && addr <= 0x7FFF) {
+        printf("TODO SWITCHING ROM/RAM BANK MODE 0x%02X\n", d);
+        return;
     }
     data[addr] = d;
 }
