@@ -164,7 +164,7 @@ unsigned gpu_cycle()
         v_dot = 0;
         if (++scanline > 153) {
             scanline = 0;
-            //if (diff < 16750000LL) nsleep(diff);
+            if (diff < 16750000LL) nsleep(diff);
         }
     }
 

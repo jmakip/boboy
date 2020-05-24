@@ -27,9 +27,11 @@ int main(int argc, char **argv)
     gpu_init();
     mem_mmap(cart);
     while (1) {
-        poll_events();
         timer_tick();
-        if (!gpu_cycle()) render_tilemap();
+        if (!gpu_cycle()) {
+            poll_events();
+            render_tilemap();
+        }
 
         if (!next_cycle) next_cycle = cpu_cycle();
 

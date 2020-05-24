@@ -19,6 +19,7 @@ struct gb_reg {
     uint16_t SP; //Stack Pointer
     uint16_t PC; //Program counter
     uint16_t IME;
+    uint16_t HALT;
 };
 
 struct gb_reg8 {
@@ -33,6 +34,7 @@ struct gb_reg8 {
     uint16_t SP; //Stack Pointer
     uint16_t PC; //Program counter
     uint16_t IME;
+    uint16_t HALT;
 };
 
 struct op_code {
@@ -58,6 +60,7 @@ unsigned halt(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     //TODO add some flag to sleep on
+    cpu.HALT = 1;
     return 4;
 }
 unsigned stop(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -900,6 +903,149 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
     //0xC0 - 0xFF SET u3,r8
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
     switch (op1) {
+    case 0x00:
+        r8->B = (r8->B << 1) | (r8->B >> 7);
+        r8->F = (r8->B & 0x01) ? FLAG_C : 0;
+        if (!r8->B) r8->F |= FLAG_Z;
+        break;
+    case 0x01:
+        r8->C = (r8->C << 1) | (r8->C >> 7);
+        r8->F = (r8->C & 0x01) ? FLAG_C : 0;
+        if (!r8->C) r8->F |= FLAG_Z;
+        break;
+    case 0x02:
+        r8->D = (r8->D << 1) | (r8->D >> 7);
+        r8->F = (r8->D & 0x01) ? FLAG_C : 0;
+        if (!r8->D) r8->F |= FLAG_Z;
+        break;
+    case 0x03:
+        r8->E = (r8->E << 1) | (r8->E >> 7);
+        r8->F = (r8->E & 0x01) ? FLAG_C : 0;
+        if (!r8->E) r8->F |= FLAG_Z;
+        break;
+    case 0x04:
+        r8->H = (r8->H << 1) | (r8->H >> 7);
+        r8->F = (r8->H & 0x01) ? FLAG_C : 0;
+        if (!r8->H) r8->F |= FLAG_Z;
+        break;
+    case 0x05:
+        r8->L = (r8->L << 1) | (r8->L >> 7);
+        r8->F = (r8->L & 0x01) ? FLAG_C : 0;
+        if (!r8->L) r8->F |= FLAG_Z;
+        break;
+    case 0x06: {
+        op1 = mem_read(cpu.HL);
+        op1 = (op1 << 1) | (op1 >> 7);
+        r8->F = (op1 & 0x01) ? FLAG_C : 0;
+        if (!op1) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x07:
+        r8->A = (r8->A << 1) | (r8->A >> 7);
+        r8->F = (r8->A & 0x01) ? FLAG_C : 0;
+        if (!r8->A) r8->F |= FLAG_Z;
+        break;
+    case 0x08:
+        r8->F = (r8->B & 0x01) ? FLAG_C : 0;
+        r8->B = (r8->B << 7) | ((r8->B >> 1) & 0x7F);
+        if (!r8->B) r8->F |= FLAG_Z;
+        break;
+    case 0x09:
+        r8->F = (r8->C & 0x01) ? FLAG_C : 0;
+        r8->C = (r8->C << 7) | ((r8->C >> 1) & 0x7F);
+        if (!r8->C) r8->F |= FLAG_Z;
+        break;
+    case 0x0A:
+        r8->F = (r8->D & 0x01) ? FLAG_C : 0;
+        r8->D = (r8->D << 7) | ((r8->D >> 1) & 0x7F);
+        if (!r8->D) r8->F |= FLAG_Z;
+        break;
+    case 0x0B:
+        r8->F = (r8->E & 0x01) ? FLAG_C : 0;
+        r8->E = (r8->E << 7) | ((r8->E >> 1) & 0x7F);
+        if (!r8->E) r8->F |= FLAG_Z;
+        break;
+    case 0x0C:
+        r8->F = (r8->H & 0x01) ? FLAG_C : 0;
+        r8->H = (r8->H << 7) | ((r8->H >> 1) & 0x7F);
+        if (!r8->H) r8->F |= FLAG_Z;
+        break;
+    case 0x0D:
+        r8->F = (r8->L & 0x01) ? FLAG_C : 0;
+        r8->L = (r8->L << 7) | ((r8->L >> 1) & 0x7F);
+        if (!r8->L) r8->F |= FLAG_Z;
+        break;
+    case 0x0E: {
+        op1 = mem_read(cpu.HL);
+        r8->F = (op1 & 0x01) ? FLAG_C : 0;
+        op1 = (op1 << 7) | ((op1 >> 1) & 0x7F);
+        if (!op1) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x0F:
+        r8->F = (r8->A & 0x01) ? FLAG_C : 0;
+        r8->A = (r8->A << 7) | ((r8->A >> 1) & 0x7F);
+        if (!r8->A) r8->F |= FLAG_Z;
+        break;
+    case 0x10: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        r8->F = (r8->B & 0x80) ? FLAG_C : 0;
+        r8->B = b0 | (r8->B << 1);
+        if (!r8->B) r8->F |= FLAG_Z;
+    } break;
+    case 0x11: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        r8->F = (r8->C & 0x80) ? FLAG_C : 0;
+        r8->C = b0 | (r8->C << 1);
+        if (!r8->C) r8->F |= FLAG_Z;
+    } break;
+    case 0x12: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        r8->F = (r8->D & 0x80) ? FLAG_C : 0;
+        r8->D = b0 | (r8->D << 1);
+        if (!r8->D) r8->F |= FLAG_Z;
+    } break;
+    case 0x13: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        r8->F = (r8->E & 0x80) ? FLAG_C : 0;
+        r8->E = b0 | (r8->E << 1);
+        if (!r8->E) r8->F |= FLAG_Z;
+    } break;
+    case 0x14: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        r8->F = (r8->H & 0x80) ? FLAG_C : 0;
+        r8->H = b0 | (r8->H << 1);
+        if (!r8->H) r8->F |= FLAG_Z;
+    } break;
+    case 0x15: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        r8->F = (r8->L & 0x80) ? FLAG_C : 0;
+        r8->L = b0 | (r8->L << 1);
+        if (!r8->L) r8->F |= FLAG_Z;
+    } break;
+    case 0x16: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        op1 = mem_read(cpu.HL);
+        r8->F = (op1 & 0x80) ? FLAG_C : 0;
+        op1 = b0 | (op1 << 1);
+        if (!op1) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x17: {
+        uint8_t b0 = (r8->F & FLAG_C) >> 4;
+        r8->F = (r8->A & 0x80) ? FLAG_C : 0;
+        r8->A = b0 | (r8->A << 1);
+        if (!r8->A) r8->F |= FLAG_Z;
+    } break;
+    case 0x18: {
+        uint8_t b7 = (r8->F & FLAG_C) << 3;
+        r8->F = (r8->B & 0x01) ? FLAG_C : 0;
+        r8->B = b7 | ((r8->B >> 1) & 0x7F);
+        if (!r8->B) r8->F |= FLAG_Z;
+    } break;
     case 0x19: {
         uint8_t b7 = (r8->F & FLAG_C) << 3;
         r8->F = (r8->C & 0x01) ? FLAG_C : 0;
@@ -918,40 +1064,117 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         r8->E = b7 | ((r8->E >> 1) & 0x7F);
         if (!r8->E) r8->F |= FLAG_Z;
     } break;
+    case 0x1C: {
+        uint8_t b7 = (r8->F & FLAG_C) << 3;
+        r8->F = (r8->H & 0x01) ? FLAG_C : 0;
+        r8->H = b7 | ((r8->H >> 1) & 0x7F);
+        if (!r8->H) r8->F |= FLAG_Z;
+    } break;
+    case 0x1D: {
+        uint8_t b7 = (r8->F & FLAG_C) << 3;
+        r8->F = (r8->L & 0x01) ? FLAG_C : 0;
+        r8->L = b7 | ((r8->L >> 1) & 0x7F);
+        if (!r8->L) r8->F |= FLAG_Z;
+    } break;
+    case 0x1E: {
+        uint8_t b7 = (r8->F & FLAG_C) << 3;
+        op1 = mem_read(cpu.HL);
+        r8->F = (op1 & 0x01) ? FLAG_C : 0;
+        op1 = b7 | ((op1 >> 1) & 0x7F);
+        if (!op1) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x1F: {
+        uint8_t b7 = (r8->F & FLAG_C) << 3;
+        r8->F = (r8->A & 0x01) ? FLAG_C : 0;
+        r8->A = b7 | ((r8->A >> 1) & 0x7F);
+        if (!r8->A) r8->F |= FLAG_Z;
+    } break;
+    case 0x20: {
+        r8->F = (r8->B & 0x80) ? FLAG_C : 0;
+        r8->B = (r8->B << 1);
+        if (!r8->B) r8->F |= FLAG_Z;
+    } break;
     case 0x21: {
-        struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
         r8->F = (r8->C & 0x80) ? FLAG_C : 0;
         r8->C = (r8->C << 1);
         if (!r8->C) r8->F |= FLAG_Z;
     } break;
     case 0x22: {
-        struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
         r8->F = (r8->D & 0x80) ? FLAG_C : 0;
         r8->D = (r8->D << 1);
         if (!r8->D) r8->F |= FLAG_Z;
     } break;
     case 0x23: {
-        struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
         r8->F = (r8->E & 0x80) ? FLAG_C : 0;
         r8->E = (r8->E << 1);
         if (!r8->E) r8->F |= FLAG_Z;
     } break;
     case 0x24: {
-        struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
         r8->F = (r8->H & 0x80) ? FLAG_C : 0;
         r8->H = (r8->H << 1);
         if (!r8->H) r8->F |= FLAG_Z;
     } break;
     case 0x25: {
-        struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
         r8->F = (r8->L & 0x80) ? FLAG_C : 0;
         r8->L = (r8->L << 1);
         if (!r8->L) r8->F |= FLAG_Z;
     } break;
+    case 0x26: {
+        op1 = mem_read(cpu.HL);
+        r8->F = (op1 & 0x80) ? FLAG_C : 0;
+        op1 = (op1 << 1);
+        if (!op1) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
     case 0x27: {
-        struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
         r8->F = (r8->A & 0x80) ? FLAG_C : 0;
         r8->A = (r8->A << 1);
+        if (!r8->A) r8->F |= FLAG_Z;
+    } break;
+    case 0x28: {
+        r8->F = (r8->B & 0x01) ? FLAG_C : 0;
+        r8->B = (r8->B & 0x80) | (r8->B >> 1);
+        if (!r8->B) r8->F |= FLAG_Z;
+    } break;
+    case 0x29: {
+        r8->F = (r8->C & 0x01) ? FLAG_C : 0;
+        r8->C = (r8->C & 0x80) | (r8->C >> 1);
+        if (!r8->C) r8->F |= FLAG_Z;
+    } break;
+    case 0x2A: {
+        r8->F = (r8->D & 0x01) ? FLAG_C : 0;
+        r8->D = (r8->D & 0x80) | (r8->D >> 1);
+        if (!r8->D) r8->F |= FLAG_Z;
+    } break;
+    case 0x2B: {
+        r8->F = (r8->E & 0x01) ? FLAG_C : 0;
+        r8->E = (r8->E & 0x80) | (r8->E >> 1);
+        if (!r8->E) r8->F |= FLAG_Z;
+    } break;
+    case 0x2C: {
+        r8->F = (r8->H & 0x01) ? FLAG_C : 0;
+        r8->H = (r8->H & 0x80) | (r8->H >> 1);
+        if (!r8->H) r8->F |= FLAG_Z;
+    } break;
+    case 0x2D: {
+        r8->F = (r8->L & 0x01) ? FLAG_C : 0;
+        r8->L = (r8->L & 0x80) | (r8->L >> 1);
+        if (!r8->L) r8->F |= FLAG_Z;
+    } break;
+    case 0x2E: {
+        op1 = mem_read(cpu.HL);
+        r8->F = (op1 & 0x01) ? FLAG_C : 0;
+        op1 = (op1 & 0x80) | (op1 >> 1);
+        if (!op1) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x2F: {
+        r8->F = (r8->A & 0x01) ? FLAG_C : 0;
+        r8->A = (r8->A & 0x80) | (r8->A >> 1);
         if (!r8->A) r8->F |= FLAG_Z;
     } break;
     case 0x30:
@@ -978,42 +1201,57 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         r8->L = (r8->L >> 4) | (r8->L << 4);
         r8->F = (r8->L) ? 0 : FLAG_Z;
         break;
+    case 0x36: {
+        op1 = mem_read(cpu.HL);
+        op1 = (op1 >> 4) | (op1 << 4);
+        r8->F = (op1) ? 0 : FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
     case 0x37:
         r8->A = (r8->A >> 4) | (r8->A << 4);
         r8->F = (r8->A) ? 0 : FLAG_Z;
         break;
     case 0x38:
-        r8->F = (r8->B & 0x01);
+        r8->F = (r8->B & 0x01) ? FLAG_C : 0;
         r8->B = (r8->B >> 1) & 0x7F;
         r8->F |= (r8->B) ? 0 : FLAG_Z;
         break;
     case 0x39:
-        r8->F = (r8->C & 0x01);
+        r8->F = (r8->C & 0x01) ? FLAG_C : 0;
         r8->C = (r8->C >> 1) & 0x7F;
         r8->F |= (r8->C) ? 0 : FLAG_Z;
         break;
     case 0x3A:
-        r8->F = (r8->D & 0x01);
+        r8->F = (r8->D & 0x01) ? FLAG_C : 0;
         r8->D = (r8->D >> 1) & 0x7F;
         r8->F |= (r8->D) ? 0 : FLAG_Z;
         break;
     case 0x3B:
-        r8->F = (r8->E & 0x01);
+        r8->F = (r8->E & 0x01) ? FLAG_C : 0;
         r8->E = (r8->E >> 1) & 0x7F;
         r8->F |= (r8->E) ? 0 : FLAG_Z;
         break;
     case 0x3C:
-        r8->F = (r8->H & 0x01);
+        r8->F = (r8->H & 0x01) ? FLAG_C : 0;
         r8->H = (r8->H >> 1) & 0x7F;
         r8->F |= (r8->H) ? 0 : FLAG_Z;
         break;
     case 0x3D:
-        r8->F = (r8->L & 0x01);
+        r8->F = (r8->L & 0x01) ? FLAG_C : 0;
         r8->L = (r8->L >> 1) & 0x7F;
         r8->F |= (r8->L) ? 0 : FLAG_Z;
         break;
+    case 0x3E: {
+        op1 = mem_read(cpu.HL);
+        r8->F = (op1 & 0x01) ? FLAG_C : 0;
+        op1 = (op1 >> 1) & 0x7F;
+        r8->F |= (op1) ? 0 : FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
     case 0x3F:
-        r8->F = (r8->A & 0x01);
+        r8->F = (r8->A & 0x01) ? FLAG_C : 0;
         r8->A = (r8->A >> 1) & 0x7F;
         r8->F |= (r8->A) ? 0 : FLAG_Z;
         break;
@@ -1037,6 +1275,29 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         r8->F |= FLAG_H;
         if (!(r8->E & 0x01)) r8->F |= FLAG_Z;
         break;
+    case 0x44:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x01)) r8->F |= FLAG_Z;
+        break;
+    case 0x45:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x01)) r8->F |= FLAG_Z;
+        break;
+    case 0x46: {
+        op1 = mem_read(cpu.HL);
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(op1 & 0x01)) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x47:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->A & 0x01)) r8->F |= FLAG_Z;
+        break;
     case 0x48:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
@@ -1056,6 +1317,29 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->E & 0x02)) r8->F |= FLAG_Z;
+        break;
+    case 0x4C:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x02)) r8->F |= FLAG_Z;
+        break;
+    case 0x4D:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x02)) r8->F |= FLAG_Z;
+        break;
+    case 0x4E: {
+        op1 = mem_read(cpu.HL);
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(op1 & 0x02)) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x4F:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->A & 0x02)) r8->F |= FLAG_Z;
         break;
     case 0x50:
         r8->F = r8->F & FLAG_C;
@@ -1082,10 +1366,33 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         r8->F |= FLAG_H;
         if (!(r8->H & 0x04)) r8->F |= FLAG_Z;
         break;
+    case 0x55:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x04)) r8->F |= FLAG_Z;
+        break;
+    case 0x56: {
+        op1 = mem_read(cpu.HL);
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(op1 & 0x04)) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x57:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->A & 0x04)) r8->F |= FLAG_Z;
+        break;
     case 0x58:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->B & 0x08)) r8->F |= FLAG_Z;
+        break;
+    case 0x59:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->C & 0x08)) r8->F |= FLAG_Z;
         break;
     case 0x5A:
         r8->F = r8->F & FLAG_C;
@@ -1097,15 +1404,86 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         r8->F |= FLAG_H;
         if (!(r8->E & 0x08)) r8->F |= FLAG_Z;
         break;
+    case 0x5C:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x08)) r8->F |= FLAG_Z;
+        break;
+    case 0x5D:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x08)) r8->F |= FLAG_Z;
+        break;
+    case 0x5E: {
+        op1 = mem_read(cpu.HL);
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(op1 & 0x08)) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
     case 0x5F:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->A & 0x08)) r8->F |= FLAG_Z;
         break;
+    case 0x60:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->B & 0x10)) r8->F |= FLAG_Z;
+        break;
+    case 0x61:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->C & 0x10)) r8->F |= FLAG_Z;
+        break;
+    case 0x62:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->D & 0x10)) r8->F |= FLAG_Z;
+        break;
     case 0x63:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->E & 0x10)) r8->F |= FLAG_Z;
+        break;
+    case 0x64:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x10)) r8->F |= FLAG_Z;
+        break;
+    case 0x65:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x10)) r8->F |= FLAG_Z;
+        break;
+    case 0x66: {
+        op1 = mem_read(cpu.HL);
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(op1 & 0x10)) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x67:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->A & 0x10)) r8->F |= FLAG_Z;
+        break;
+    case 0x68:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->B & 0x20)) r8->F |= FLAG_Z;
+        break;
+    case 0x69:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->C & 0x20)) r8->F |= FLAG_Z;
+        break;
+    case 0x6A:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->D & 0x20)) r8->F |= FLAG_Z;
         break;
     case 0x6B:
         r8->F = r8->F & FLAG_C;
@@ -1117,25 +1495,96 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         r8->F |= FLAG_H;
         if (!(r8->H & 0x20)) r8->F |= FLAG_Z;
         break;
+    case 0x6D:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x20)) r8->F |= FLAG_Z;
+        break;
+    case 0x6E: {
+        op1 = mem_read(cpu.HL);
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(op1 & 0x20)) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x6F:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->A & 0x20)) r8->F |= FLAG_Z;
+        break;
     case 0x70:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->B & 0x40)) r8->F |= FLAG_Z;
+        break;
+    case 0x71:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->C & 0x40)) r8->F |= FLAG_Z;
+        break;
+    case 0x72:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->D & 0x40)) r8->F |= FLAG_Z;
         break;
     case 0x73:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->E & 0x40)) r8->F |= FLAG_Z;
         break;
+    case 0x74:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x40)) r8->F |= FLAG_Z;
+        break;
+    case 0x75:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x40)) r8->F |= FLAG_Z;
+        break;
+    case 0x76: {
+        op1 = mem_read(cpu.HL);
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(op1 & 0x40)) r8->F |= FLAG_Z;
+        mem_write(cpu.HL, op1);
+        return 12;
+    } break;
+    case 0x77:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->A & 0x40)) r8->F |= FLAG_Z;
+        break;
     case 0x78:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->B & 0x80)) r8->F |= FLAG_Z;
         break;
+    case 0x79:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->C & 0x80)) r8->F |= FLAG_Z;
+        break;
+    case 0x7A:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->D & 0x80)) r8->F |= FLAG_Z;
+        break;
     case 0x7B:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
         if (!(r8->E & 0x80)) r8->F |= FLAG_Z;
+        break;
+    case 0x7C:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->H & 0x80)) r8->F |= FLAG_Z;
+        break;
+    case 0x7D:
+        r8->F = r8->F & FLAG_C;
+        r8->F |= FLAG_H;
+        if (!(r8->L & 0x80)) r8->F |= FLAG_Z;
         break;
     case 0x7E:
         r8->F = r8->F & FLAG_C;
@@ -1147,29 +1596,106 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
     case 0x7F:
         r8->F = r8->F & FLAG_C;
         r8->F |= FLAG_H;
-        if (!(r8->E & 0x80)) r8->F |= FLAG_Z;
+        if (!(r8->A & 0x80)) r8->F |= FLAG_Z;
         break;
         //RES u3,r8
-    case 0x80:
-        r8->B &= 0xFE;
+    case 0x80: r8->B &= 0xFE; break;
+    case 0x81: r8->C &= 0xFE; break;
+    case 0x82: r8->D &= 0xFE; break;
+    case 0x83: r8->E &= 0xFE; break;
+    case 0x84: r8->H &= 0xFE; break;
+    case 0x85: r8->L &= 0xFE; break;
+    case 0x86:
+        op2 = mem_read(cpu.HL);
+        op2 &= 0xFE;
+        mem_write(cpu.HL, op2);
+        return 12;
         break;
-    case 0x81:
-        r8->C &= 0xFE;
+    case 0x87: r8->A &= 0xFE; break;
+    case 0x88: r8->B &= 0xFD; break;
+    case 0x89: r8->C &= 0xFD; break;
+    case 0x8A: r8->D &= 0xFD; break;
+    case 0x8B: r8->E &= 0xFD; break;
+    case 0x8C: r8->H &= 0xFD; break;
+    case 0x8D: r8->L &= 0xFD; break;
+    case 0x8E:
+        op2 = mem_read(cpu.HL);
+        op2 &= 0xFD;
+        mem_write(cpu.HL, op2);
+        return 12;
         break;
-    case 0x82:
-        r8->D &= 0xFE;
-    case 0x83:
-        r8->E &= 0xFE;
+    case 0x8F: r8->A &= 0xFD; break;
+    case 0x90: r8->B &= 0xFB; break;
+    case 0x91: r8->C &= 0xFB; break;
+    case 0x92: r8->D &= 0xFB; break;
+    case 0x93: r8->E &= 0xFB; break;
+    case 0x94: r8->H &= 0xFB; break;
+    case 0x95: r8->L &= 0xFB; break;
+    case 0x96:
+        op2 = mem_read(cpu.HL);
+        op2 &= 0xFB;
+        mem_write(cpu.HL, op2);
+        return 12;
         break;
-    case 0x84:
-        r8->H &= 0xFE;
+    case 0x97: r8->A &= 0xFB; break;
+    case 0x98: r8->B &= 0xF7; break;
+    case 0x99: r8->C &= 0xF7; break;
+    case 0x9A: r8->D &= 0xF7; break;
+    case 0x9B: r8->E &= 0xF7; break;
+    case 0x9C: r8->H &= 0xF7; break;
+    case 0x9D: r8->L &= 0xF7; break;
+    case 0x9E:
+        op2 = mem_read(cpu.HL);
+        op2 &= 0xF7;
+        mem_write(cpu.HL, op2);
+        return 12;
         break;
-    case 0x85:
-        r8->L &= 0xFE;
+    case 0x9F: r8->A &= 0xF7; break;
+    case 0xA0: r8->B &= 0xEF; break;
+    case 0xA1: r8->C &= 0xEF; break;
+    case 0xA2: r8->D &= 0xEF; break;
+    case 0xA3: r8->E &= 0xEF; break;
+    case 0xA4: r8->H &= 0xEF; break;
+    case 0xA5: r8->L &= 0xEF; break;
+    case 0xA6:
+        op2 = mem_read(cpu.HL);
+        op2 &= 0xEF;
+        mem_write(cpu.HL, op2);
+        return 12;
         break;
-    case 0x87:
-        r8->A &= 0xFE;
+    case 0xA7: r8->A &= 0xEF; break;
+    case 0xA8: r8->B &= 0xDF; break;
+    case 0xA9: r8->C &= 0xDF; break;
+    case 0xAA: r8->D &= 0xDF; break;
+    case 0xAB: r8->E &= 0xDF; break;
+    case 0xAC: r8->H &= 0xDF; break;
+    case 0xAD: r8->L &= 0xDF; break;
+    case 0xAE:
+        op2 = mem_read(cpu.HL);
+        op2 &= 0xDF;
+        mem_write(cpu.HL, op2);
+        return 12;
         break;
+    case 0xAF: r8->A &= 0xDF; break;
+    case 0xB0: r8->B &= 0xBF; break;
+    case 0xB1: r8->C &= 0xBF; break;
+    case 0xB2: r8->D &= 0xBF; break;
+    case 0xB3: r8->E &= 0xBF; break;
+    case 0xB4: r8->H &= 0xBF; break;
+    case 0xB5: r8->L &= 0xBF; break;
+    case 0xB6:
+        op2 = mem_read(cpu.HL);
+        op2 &= 0xBF;
+        mem_write(cpu.HL, op2);
+        return 12;
+        break;
+    case 0xB7: r8->A &= 0xBF; break;
+    case 0xB8: r8->B &= 0x7F; break;
+    case 0xB9: r8->C &= 0x7F; break;
+    case 0xBA: r8->D &= 0x7F; break;
+    case 0xBB: r8->E &= 0x7F; break;
+    case 0xBC: r8->H &= 0x7F; break;
+    case 0xBD: r8->L &= 0x7F; break;
 
     case 0xBE:
         op2 = mem_read(cpu.HL);
@@ -1177,54 +1703,113 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xBF:
+        r8->A &= 0x7F;
+        break;
+    case 0xC0: r8->B |= 0x01; break;
+    case 0xC1: r8->C |= 0x01; break;
+    case 0xC2: r8->D |= 0x01; break;
+    case 0xC3: r8->E |= 0x01; break;
+    case 0xC4: r8->H |= 0x01; break;
+    case 0xC5: r8->L |= 0x01; break;
     case 0xC6:
         op2 = mem_read(cpu.HL);
         op2 |= 0x01;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xC7: r8->A |= 0x01; break;
+    case 0xC8: r8->B |= 0x02; break;
+    case 0xC9: r8->C |= 0x02; break;
+    case 0xCA: r8->D |= 0x02; break;
+    case 0xCB: r8->E |= 0x02; break;
+    case 0xCC: r8->H |= 0x02; break;
+    case 0xCD: r8->L |= 0x02; break;
     case 0xCE:
         op2 = mem_read(cpu.HL);
         op2 |= 0x02;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xCF: r8->A |= 0x02; break;
+    case 0xD0: r8->B |= 0x04; break;
+    case 0xD1: r8->C |= 0x04; break;
+    case 0xD2: r8->D |= 0x04; break;
+    case 0xD3: r8->E |= 0x04; break;
+    case 0xD4: r8->H |= 0x04; break;
+    case 0xD5: r8->L |= 0x04; break;
     case 0xD6:
         op2 = mem_read(cpu.HL);
         op2 |= 0x04;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xD7: r8->A |= 0x04; break;
+    case 0xD8: r8->B |= 0x08; break;
+    case 0xD9: r8->C |= 0x08; break;
+    case 0xDA: r8->D |= 0x08; break;
+    case 0xDB: r8->E |= 0x08; break;
+    case 0xDC: r8->H |= 0x08; break;
+    case 0xDD: r8->L |= 0x08; break;
     case 0xDE:
         op2 = mem_read(cpu.HL);
         op2 |= 0x08;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xDF: r8->A |= 0x08; break;
+    case 0xE0: r8->B |= 0x10; break;
+    case 0xE1: r8->C |= 0x10; break;
+    case 0xE2: r8->D |= 0x10; break;
+    case 0xE3: r8->E |= 0x10; break;
+    case 0xE4: r8->H |= 0x10; break;
+    case 0xE5: r8->L |= 0x10; break;
     case 0xE6:
         op2 = mem_read(cpu.HL);
         op2 |= 0x10;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xE7: r8->A |= 0x10; break;
+    case 0xE8: r8->B |= 0x20; break;
+    case 0xE9: r8->C |= 0x20; break;
+    case 0xEA: r8->D |= 0x20; break;
+    case 0xEB: r8->E |= 0x20; break;
+    case 0xEC: r8->H |= 0x20; break;
+    case 0xED: r8->L |= 0x20; break;
     case 0xEE:
         op2 = mem_read(cpu.HL);
         op2 |= 0x20;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xEF: r8->A |= 0x20; break;
+    case 0xF0: r8->B |= 0x40; break;
+    case 0xF1: r8->C |= 0x40; break;
+    case 0xF2: r8->D |= 0x40; break;
+    case 0xF3: r8->E |= 0x40; break;
+    case 0xF4: r8->H |= 0x40; break;
+    case 0xF5: r8->L |= 0x40; break;
     case 0xF6:
         op2 = mem_read(cpu.HL);
         op2 |= 0x40;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xF7: r8->A |= 0x40; break;
+    case 0xF8: r8->B |= 0x80; break;
+    case 0xF9: r8->C |= 0x80; break;
+    case 0xFA: r8->D |= 0x80; break;
+    case 0xFB: r8->E |= 0x80; break;
+    case 0xFC: r8->H |= 0x80; break;
+    case 0xFD: r8->L |= 0x80; break;
     case 0xFE:
         op2 = mem_read(cpu.HL);
         op2 |= 0x80;
         mem_write(cpu.HL, op2);
         return 12;
         break;
+    case 0xFF: r8->A |= 0x80; break;
     default:
         printf("TODO CB %02X\n", op1);
         exit(2);
@@ -2091,7 +2676,7 @@ unsigned ld16_hl_sp_n(uint8_t op0, uint8_t op1, uint8_t op2)
     //if ((cpu.SP & 0x0F) + (op1 & 0x0F) > 0x0F) r8->F |= FLAG_H;
     if ((x & 0xFF) + (y & 0xFF) > 0xFF) r8->F |= FLAG_C;
     if (((x & 0x0F) + (y & 0x0F)) > 0x0F) r8->F |= FLAG_H;
-    
+
     return 12;
 }
 
@@ -2615,13 +3200,13 @@ unsigned sbc_a(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
     uint16_t x = r8->A;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t y = r8->A;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
-
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
     return 4;
 }
 unsigned sbc_b(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -2629,13 +3214,14 @@ unsigned sbc_b(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op0);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t x = r8->B;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t x = r8->A;
+    uint16_t y = r8->B;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -2644,13 +3230,14 @@ unsigned sbc_c(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op0);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t x = r8->C;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t x = r8->A;
+    uint16_t y = r8->C;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -2659,13 +3246,14 @@ unsigned sbc_d(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op0);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t x = r8->D;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t x = r8->A;
+    uint16_t y = r8->D;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -2674,13 +3262,14 @@ unsigned sbc_e(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op0);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t x = r8->E;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t x = r8->A;
+    uint16_t y = r8->E;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -2689,13 +3278,14 @@ unsigned sbc_h(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op0);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t x = r8->H;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t x = r8->A;
+    uint16_t y = r8->H;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -2704,13 +3294,14 @@ unsigned sbc_l(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op0);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t x = r8->L;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t x = r8->A;
+    uint16_t y = r8->L;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -2719,14 +3310,30 @@ unsigned sbc_a_im(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op0);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t x = op1;
-    x += (r8->F & FLAG_C) ? 1 : 0;
+    uint16_t x = r8->A;
+    uint16_t y = op1;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
     r8->F = FLAG_N;
-    if (r8->A < x) r8->F |= FLAG_C;
-    if (r8->A == x) r8->F |= FLAG_Z;
-    if ((r8->A & 0x0F) < (x & 0x0F)) r8->F |= FLAG_H;
-    r8->A -= x;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
 
+    return 8;
+}
+unsigned sbc_a_mem(uint8_t op0, uint8_t op1, uint8_t op2)
+{
+    UNUSED(op0);
+    UNUSED(op2);
+    struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
+    uint16_t x = r8->A;
+    uint16_t y = mem_read(cpu.HL);
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r8->F = FLAG_N;
+    r8->A = x - y - c;
+    if (x < y + c) r8->F |= FLAG_C;
+    if (!r8->A) r8->F |= FLAG_Z;
+    if ((x & 0x0F) < (y & 0x0F) + c) r8->F |= FLAG_H;
     return 8;
 }
 
@@ -2977,7 +3584,7 @@ unsigned add16_sp_sign_n(uint8_t op0, uint8_t op1, uint8_t op2)
     r8->F = 0;
     if ((x & 0xFF) + (y & 0xFF) > 0xFF) r8->F |= FLAG_C;
     if (((x & 0x0F) + (y & 0x0F)) > 0x0F) r8->F |= FLAG_H;
-    
+
     cpu.SP = x + y;
 
     return 16;
@@ -2989,16 +3596,16 @@ unsigned adc_a(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = r8->A;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -3008,16 +3615,16 @@ unsigned adc_b(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = r8->B;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -3027,16 +3634,16 @@ unsigned adc_c(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = r8->C;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -3046,16 +3653,16 @@ unsigned adc_d(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = r8->D;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -3065,16 +3672,16 @@ unsigned adc_e(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = r8->E;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -3084,16 +3691,16 @@ unsigned adc_h(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = r8->H;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -3103,16 +3710,16 @@ unsigned adc_l(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = r8->L;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
 
     return 4;
 }
@@ -3122,17 +3729,16 @@ unsigned adc_mem(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = mem_read(cpu.HL);
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
-
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
     return 8;
 }
 unsigned adc_n(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -3141,17 +3747,16 @@ unsigned adc_n(uint8_t op0, uint8_t op1, uint8_t op2)
     UNUSED(op1);
     UNUSED(op2);
     struct gb_reg8 *r8 = (struct gb_reg8 *)&cpu;
-    uint16_t c;
+    uint16_t r;
     uint8_t x = r8->A;
     uint8_t y = op1;
-    if (r8->F & FLAG_C) y++;
-    c = x + y;
-    r8->A = x + y;
+    uint8_t c = (r8->F & FLAG_C) ? 1 : 0;
+    r = x + y + c;
     r8->F = 0;
-    if (c & 0xFF00) r8->F |= FLAG_C;
+    r8->A = r;
+    if (r & 0xFF00) r8->F |= FLAG_C;
     if (!r8->A) r8->F |= FLAG_Z;
-    if (((x & 0x0F) + (y & 0x0F)) & 0xF0) r8->F |= FLAG_H;
-
+    if (((x & 0x0F) + (y & 0x0F) + c) > 0x0F) r8->F |= FLAG_H;
     return 8;
 }
 //C <- [7 <- 0] <- [7]
@@ -3180,6 +3785,7 @@ unsigned rrca(uint8_t op0, uint8_t op1, uint8_t op2)
     return 4;
 }
 //rotate right through carry
+//there is cb 1F that is similar but has zero flag
 unsigned rra(uint8_t op0, uint8_t op1, uint8_t op2)
 {
     UNUSED(op0);
@@ -3189,11 +3795,12 @@ unsigned rra(uint8_t op0, uint8_t op1, uint8_t op2)
     uint8_t b7 = (r8->F & FLAG_C) << 3;
     r8->F = (r8->A & 0x01) ? FLAG_C : 0;
     r8->A = b7 | ((r8->A >> 1) & 0x7F);
-    if (!r8->A) r8->F |= FLAG_Z;
+    //if (!r8->A) r8->F |= FLAG_Z;
 
     return 4;
 }
 //rotate left through carry
+//there is cb 17 that is similar but has zero flag
 unsigned rla(uint8_t op0, uint8_t op1, uint8_t op2)
 {
     UNUSED(op0);
@@ -3203,7 +3810,7 @@ unsigned rla(uint8_t op0, uint8_t op1, uint8_t op2)
     uint8_t b0 = (r8->F & FLAG_C) >> 4;
     r8->F = (r8->A & 0x80) ? FLAG_C : 0;
     r8->A = b0 | (r8->A << 1);
-    if (!r8->A) r8->F |= FLAG_Z;
+    //if (!r8->A) r8->F |= FLAG_Z;
 
     return 4;
 }
@@ -3415,8 +4022,8 @@ struct op_code ins_set[] = {
     { 0x9A, 0, &sbc_d, "SBC D" },
     { 0x9B, 0, &sbc_e, "SBC E" },
     { 0x9C, 0, &sbc_h, "SBC H" },
-    { 0x9D, 0, &sbc_l, "SBC L" }, //TODO
-    { 0x9E, 0, &nop, "TODO" }, //TODO
+    { 0x9D, 0, &sbc_l, "SBC L" },
+    { 0x9E, 0, &sbc_a_mem, "SBC (HL)" },
     { 0x9F, 0, &sbc_a, "SBC A,A" },
     { 0xA0, 0, &and_b, "AND B" },
     { 0xA1, 0, &and_c, "AND C" },
@@ -3488,8 +4095,8 @@ struct op_code ins_set[] = {
     { 0xE3, 0, &nop, "TODO" }, //TODO
     { 0xE4, 0, &nop, "TODO" }, //TODO
     { 0xE5, 0, &push_hl, "PUSH HL" },
-    { 0xE6, 1, &and_n, "and #" }, //TODO
-    { 0xE7, 0, &nop, "TODO" }, //TODO
+    { 0xE6, 1, &and_n, "and #" },
+    { 0xE7, 0, &rst, "RST E7" },
     { 0xE8, 1, &add16_sp_sign_n, "ADD SP, n" },
     { 0xE9, 0, &jump_hl, "JP HL" },
     { 0xEA, 2, &ld_im_mem_a, "LD (nn),A" },
@@ -3505,7 +4112,7 @@ struct op_code ins_set[] = {
     { 0xF4, 0, &nop, "TODO" }, //TODO
     { 0xF5, 0, &push_af, "PUSH AF" },
     { 0xF6, 1, &or_n, "OR #" },
-    { 0xF7, 0, &nop, "TODO" }, //TODO
+    { 0xF7, 0, &rst, "RST F7" },
     { 0xF8, 1, &ld16_hl_sp_n, "LD HL, SP+n" },
     { 0xF9, 0, &ld16_sp_hl, "LD SP,HL" },
     { 0xFA, 2, &ld_a_im_mem, "LD A,(nn)" },
@@ -3593,6 +4200,7 @@ void irq_request(uint8_t irq)
     }
 
     mem_write(0xFF0F, req);
+    cpu.HALT = 0;
 }
 
 //interrupt service routine
@@ -3637,7 +4245,7 @@ unsigned cpu_cycle()
     uint8_t op[4];
     uint8_t *p = op;
     unsigned width;
-    unsigned cycles;
+    unsigned cycles = 4;
     uint8_t interrupt;
 
     // check interrupts
@@ -3667,9 +4275,9 @@ unsigned cpu_cycle()
         cycles = start_isr(irq);
         goto skip_load;
     }
-
-    //if not halted
-    //if prev op cycles expired
+    if (cpu.HALT) goto skip_load;
+        //if not halted
+        //if prev op cycles expired
 #ifdef BUGBUG
     dbg_pc_sp();
 #endif

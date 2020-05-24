@@ -67,7 +67,7 @@ void render_tilemap()
     assemble_bg_map();
     get_bg_map(pixels);
     SDL_Surface *loadedSurface = SDL_CreateRGBSurfaceFrom(
-        pixels, 256, 256, 32, 4*256,
+        pixels, 256, 256, 32, 4 * 256,
         //SDL_CreateRGBSurfaceFrom(pixels, 128, 128, 32, 4 * 128,
         0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000);
 
