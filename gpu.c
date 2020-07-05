@@ -123,14 +123,14 @@ void nsleep(uint64_t nano)
 
 void get_time(struct timespec *t)
 {
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    clock_gettime(CLOCK_MONOTONIC, t);
 }
 
 uint64_t elapsed_nano(struct timespec *tstart, struct timespec *tend)
 {
     uint64_t nano;
     //printf("2.5\n");
-    return 1;
+    //return 1;
     if (tend->tv_sec > tstart->tv_sec + 1) //over second diff just return second
         return 1000000000LL;
 
@@ -153,17 +153,22 @@ void gpu_init()
 unsigned gpu_cycle()
 {
     struct timespec now;
-    uint64_t diff = 16740000;
+    uint64_t diff;// = 16740000;
     uint8_t stat = mem_read(LCDC_STAT);
     uint8_t lyc = mem_read(LCDC_LYC);
     uint8_t lcdc = mem_read(LCDC_CTRL);
     scanline = mem_read(LCDC_LY);
     if (!(lcdc & LCD_ENABLE)) return 1;
 
+    
+
     if (++v_dot >= 455) {
         v_dot = 0;
         if (++scanline > 153) {
             scanline = 0;
+            get_time(&now);
+            diff = elapsed_nano(&prev, &now);
+            memcpy(&prev, &now, sizeof(struct timespec));
             if (diff < 16750000LL) nsleep(diff);
         }
     }
