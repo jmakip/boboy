@@ -765,7 +765,7 @@ unsigned rst(uint8_t op0, uint8_t op1, uint8_t op2)
     cpu.SP -= 2;
     mem_write16(cpu.SP, cpu.PC);
     cpu.PC = 0x0000 + (op0 - 0xc7);
-    return 24;
+    return 16;
 }
 
 unsigned call(uint8_t op0, uint8_t op1, uint8_t op2)
@@ -4219,15 +4219,18 @@ unsigned start_isr(uint8_t irq)
     cpu.PC = 0x0000 + irq;
     return 20;
 }
+
 void dbg_pc_sp()
 {
     printf("PC 0x%04X: SP 0x%04X, ", cpu.PC, cpu.SP);
 }
+
 void dbg_reg()
 {
     printf("AF 0x%04X, BC 0x%04X, DE 0x%04X, HL 0x%04X,", cpu.AF, cpu.BC,
            cpu.DE, cpu.HL);
 }
+
 void dbg_op(uint8_t op0, uint8_t op1, uint8_t op2)
 {
     printf(" 0x%02X, %s OP1:%02X OP2:%02X\n", op0, op_info(op0), op1, op2);

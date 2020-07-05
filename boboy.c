@@ -26,6 +26,7 @@ int main(int argc, char **argv)
     cpu_reset();
     gpu_init();
     mem_mmap(cart);
+
     while (1) {
         timer_tick();
         if (!gpu_cycle()) {
