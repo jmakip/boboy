@@ -6,9 +6,9 @@ project('boboy', 'c',
 sdldep = dependency('sdl2', version : '>=2.0.0')
 
 incdir = include_directories('include')
-boboy_sources = ['boboy.c', 'cart.c', 'cpu.c', 'gpu.c', 'mem.c','sdl.c', 'timer.c']
+boboy_src = ['src/boboy.c', 'src/cart.c', 'src/cpu.c', 'src/gpu.c', 'src/mem.c','src/sdl.c', 'src/timer.c']
 
-exe = executable('boboy', boboy_sources,
+exe = executable('boboy', boboy_src,
   install : true, include_directories : incdir, dependencies : sdldep)
 
 test('basic', exe)
