@@ -13,8 +13,8 @@
 #define TIM_ENABLE   0x04
 #define TIM_DIV_MASK 0x03
 #define TIM_DIV16    0x01
-#define TIM_DIV64    0x10
-#define TIM_DIV256   0x11
+#define TIM_DIV64    0x02
+#define TIM_DIV256   0x03
 #define TIM_DIV1024  0x00
 
 // Internal counters for timers
@@ -22,7 +22,7 @@
 // and include glitch when resetting div but this implementation does not have
 // that functionality yet.
 struct tim_cnt {
-    uint8_t div_count; //8 bit up counter that updates 0xFF04 on overflow
+    uint32_t div_count; //22bit up counter,
     uint16_t tim_count;
     uint16_t tim_arr;
 };
@@ -39,10 +39,10 @@ struct tim_cnt tim = {
 void timer_tick()
 {
     uint8_t tac = mem_read(TIM_TAC);
-    if (++tim.div_count) {
-        uint8_t div = mem_read(DIVIDER_COUNT);
-        mem_write(DIVIDER_COUNT, ++div);
-    }
+
+    tim.div_count = (tim.div_count + 1) & 0x3FFF;
+    mem_write(DIVIDER_COUNT, (tim.div_count>>14)&0xFF);
+
     if (tac & TIM_ENABLE) {
         switch (tac & TIM_DIV_MASK) {
         case TIM_DIV1024:
