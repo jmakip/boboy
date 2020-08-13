@@ -11,4 +11,6 @@ boboy_src = ['src/boboy.c', 'src/cart.c', 'src/cpu.c', 'src/gpu.c', 'src/mem.c',
 exe = executable('boboy', boboy_src,
   install : true, include_directories : incdir, dependencies : sdldep)
 
-test('basic', exe)
+#test('basic', exe)
+
+subdir('test')
