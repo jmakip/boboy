@@ -1,5 +1,5 @@
-#ifndef _GB_WIN_H_
-#define _GB_WIN_H_
+#ifndef GB_WINDOW_SDL_H
+#define GB_WINDOW_SDL_H
 
 void init_window();
 void render_tilemap();
