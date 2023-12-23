@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
+#include <SDL_ttf.h>
 #include "mem.h"
+#include "gpu.h"
 
 //The window we'll be rendering to
 SDL_Window *window = NULL;
@@ -14,7 +16,8 @@ uint32_t pixels[256 * 256];
 
 void init_window()
 {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    //if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         printf("SDL_Init Error: %s\n", SDL_GetError());
         exit(1);
     }
@@ -98,3 +101,106 @@ void poll_events()
         }
     }
 }
+
+
+//structure that holds SDL2 texture along with its width and height
+//used to render text
+struct texture {
+    SDL_Texture *texture;
+    SDL_Texture *text;
+    int width;
+    int height;
+};
+//structure that holds state of debug window
+//debug window is a separate window that shows the state of the cpu
+//and memory around SP and PC
+//it is updated every time the cpu is stepped on debug mode
+//window is created using SDL2
+//Debug info is displayed as text and text is rendered using SDL2_ttf
+struct dbg_window {
+    SDL_Window *window; //Debug window
+    SDL_Renderer *renderer; //Debug window renderer
+    SDL_Surface *surface; //Debug window surface
+    TTF_Font *font; //Debug window font
+    struct texture text_texture; //Debug window text texture
+};
+
+//initialize debug window
+//create window, renderer, font and text texture
+//return 0 on success, -1 on failure
+int32_t init_dbg_window(struct dbg_window *dbg_win)
+{
+    if (TTF_Init() < 0) {
+        printf("TTF_Init Error: %s", TTF_GetError());
+        return -1;
+    }
+    //initialize SDL2
+    //if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    //    printf("Could not initialize SDL2: %s\n", SDL_GetError());
+    //    return -1;
+    //}
+    //create debug window
+    dbg_win->window = SDL_CreateWindow("Debug", SDL_WINDOWPOS_UNDEFINED,
+                                       SDL_WINDOWPOS_UNDEFINED, 640, 480,
+                                       SDL_WINDOW_SHOWN);
+    if (!dbg_win->window) {
+        printf("Could not create debug window: %s\n", SDL_GetError());
+        return -1;
+    }
+
+    if (TTF_Init() < 0) {
+        printf("Could not initialize SDL2_ttf: %s\n", TTF_GetError());
+        return -1;
+    }
+
+    //initialize SDL2 TTF_font
+    //dbg_win->font = TTF_OpenFont("GamergirlClassic-9MVj.ttf", 16);
+    dbg_win->font = TTF_OpenFont("font.ttf", 16);
+
+
+    if (!dbg_win->font) {
+        printf("Could not open font: %s\n", SDL_GetError());
+        return -1;
+    }
+    //get debug window surface
+    dbg_win->surface = SDL_GetWindowSurface(dbg_win->window);
+    
+}
+//draw debug window
+int32_t draw_dbg_window(struct dbg_window *dbg_win)
+{
+   
+    const char *dbg_text = "A = 0x00, X = 0x00, Y = 0x00, SP = 0x00, PC = 0x00";
+    SDL_Color text_color = {0, 0, 0, 0};
+    SDL_Surface *text_surface =
+        TTF_RenderText_Solid(dbg_win->font, dbg_text, text_color);
+    if (!text_surface) {
+        printf("Could not create text surface: %s", SDL_GetError());
+        return -1;
+    }
+    SDL_Rect stretchRect;
+    stretchRect.x = 0;
+    stretchRect.y = 0;
+    stretchRect.w = 640;
+    stretchRect.h = 240;
+    SDL_BlitScaled(text_surface, NULL, dbg_win->surface, &stretchRect);
+    SDL_UpdateWindowSurface(dbg_win->window);
+    //free text surface
+    SDL_FreeSurface(text_surface);
+
+}
+
+// debug debug interface
+struct dbg_window dbg_win;
+void debug_window_init()
+{
+    init_dbg_window(&dbg_win);
+}
+void debug_window_update()
+{
+    draw_dbg_window(&dbg_win);
+}
+
+
+
+

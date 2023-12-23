@@ -1,9 +1,11 @@
 #include <time.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <unistd.h>
 
 #include "gpu.h"
 #include "cpu.h"
+#include "mem.h"
 
 enum {
     LCDC_CTRL = 0xFF40,

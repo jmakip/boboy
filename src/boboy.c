@@ -11,8 +11,14 @@
 #include "sdl.h"
 #include "mem.h"
 
+
 #define PROJECT_NAME "boboy"
 #define VERSION_STR  "0.0.1"
+
+
+//placeholder externs before we include them properly
+extern void debug_window_init();
+extern void debug_window_update();
 
 int main(int argc, char **argv)
 {
@@ -90,19 +96,21 @@ int main(int argc, char **argv)
             next_cycle--;
         }
     } else if (debug) {
+        debug_window_init();
         // run the cpu in debug mode
         while (1) {
             timer_tick();
             if (!gpu_cycle()) {
                 poll_events();
-                render_tilemap();
+                //render_tilemap();
             }
 
             if (!next_cycle) next_cycle = cpu_cycle();
 
             next_cycle--;
+            debug_window_update();
             // wait for a keypress after each instruction
-            getchar();
+            //getchar();
         }
     }
     return 0;
