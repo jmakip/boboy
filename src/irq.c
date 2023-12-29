@@ -1,4 +1,4 @@
-
+#include "irq.h"
 
 void irq_request(uint8_t irq)
 {

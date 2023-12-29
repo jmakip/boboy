@@ -28,7 +28,9 @@
 extern void setUp(void);
 extern void tearDown(void);
 extern void test_Simple(void);
-extern void test_dexec_exec(void);
+extern void test_mem_read(void);
+extern void test_load_rom(void);
+extern void test_print_cart_hdr(void);
 
 
 /*=======Test Reset Option=====*/

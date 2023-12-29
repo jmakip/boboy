@@ -31,16 +31,40 @@ struct mem_map {
     uint8_t ier[0x01];
 };
 
-#define OAM_DMA   0xFF46
+#define JOYP1     0xFF00
 #define SERIAL_SB 0xFF01
 #define SERIAL_SC 0xFF02
+#define OAM_DMA   0xFF46
 
 struct mem_map map;
 struct gbc_cart *cart = 0;
+
+uint8_t keyboard[0] = {0};
+uint8_t read_joystick() 
+{
+    uint8_t *data = (uint8_t *)&map;
+    uint8_t button = 0x00;
+    if ((data[JOYP1]) & 0x30 == 0x30) return 0x0F;
+    else if (data[JOYP1] & 0x20) {
+        button = 0x00;
+        for (int i = 0; i < 4; i++) {
+            if (!keyboard[i]) button |=(1<<i);
+        }
+    } else if (data[JOYP1] & 0x10) {
+        button = 0x00;
+        for (int i = 0; i < 4; i++) {
+            if (!keyboard[i+4]) button |=(1<<i);
+        }
+    } else return 0x0F;
+    return button;
+}
+
 uint8_t mem_read(uint16_t addr)
 {
     //TODO add some checks
     uint8_t *data = (uint8_t *)&map;
+    if (addr == JOYP1) //debug
+        return read_joystick();
     return data[addr];
 }
 
@@ -59,11 +83,12 @@ void mem_write(uint16_t addr, uint8_t d)
     //and some areas should trigger bank changes etc.
     uint8_t *data = (uint8_t *)&map;
     if (addr == OAM_DMA) {
+        printf("OAM DMA\n");
         memcpy(data + 0XFE00, data + ((uint16_t)(d) << 8), 0xF1);
     }
     if (addr == SERIAL_SC) {
         if (d & 0x80) {
-            printf("%c", data + SERIAL_SB);
+            //printf("%c", data + SERIAL_SB);
             //todo isr should be 8 bit clocks after
             irq_request(0x58);
         }

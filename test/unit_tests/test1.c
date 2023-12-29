@@ -67,3 +67,5 @@ void test_mem_read()
     tmp = mem_read(0x0001);
     TEST_ASSERT_EQUAL(tmp, 0x00);
 }
+
+

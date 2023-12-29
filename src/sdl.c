@@ -2,6 +2,7 @@
 #include <SDL_ttf.h>
 #include "mem.h"
 #include "gpu.h"
+#include "sdl.h"
 
 //The window we'll be rendering to
 SDL_Window *window = NULL;
@@ -22,8 +23,7 @@ void init_window()
         exit(1);
     }
 
-    window =
-        SDL_CreateWindow("tilemap", SDL_WINDOWPOS_UNDEFINED,
+    window = SDL_CreateWindow("tilemap", SDL_WINDOWPOS_UNDEFINED,
                          SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
 
     if (!window) {
@@ -37,7 +37,7 @@ void init_window()
 //Block 0 is $8000-87FF
 //Block 1 is $8800-8FFF
 //Block 2 is $9000-97FF
-void convert_pixels()
+void draw_bg()
 {
     uint16_t dot;
     int x, y, yy;
@@ -50,8 +50,7 @@ void convert_pixels()
             for (y = 0; y < 8; y++) {
                 int i;
                 uint32_t pix8[8];
-                dot =
-                    mem_read16(0x8000 + (16 * x + 2 * y) + yy * 16 * 8 * 8 * 2);
+                dot = mem_read16(0x8000 + (16 * x + 2 * y) + yy * 16 * 8 * 8 * 2);
                 for (i = 0; i < 8; i++) {
                     pix8[i] = ((dot & (0x80 >> (i - 1))) << (i - 1)) * 128;
                     pix8[i] += ((dot & (0x8000 >> (i - 1))) << (i - 1)) * 64;
@@ -63,11 +62,25 @@ void convert_pixels()
         }
     }
 }
+void dump_OAM() 
+{
+    for (int i = 0; i < 40; i++) {
+        //y pos, x pos, tile index, attributes
+        uint8_t y = mem_read(0xFE00 + i * 4);
+        uint8_t x = mem_read(0xFE00 + i * 4 + 1);
+        uint8_t tile = mem_read(0xFE00 + i * 4 + 2);
+        uint8_t attr = mem_read(0xFE00 + i * 4 + 3);
+        printf("OAM[%d] = y = %d, x = %d, tile = %d, attr = %d\n", i, y, x, tile, attr);
+    }
+
+}
+
 
 void render_tilemap()
 {
     //convert_pixels();
     assemble_bg_map();
+    draw_sprites();
     get_bg_map(pixels);
     SDL_Surface *loadedSurface = SDL_CreateRGBSurfaceFrom(
         pixels, 256, 256, 32, 4 * 256,
@@ -85,6 +98,7 @@ void render_tilemap()
     SDL_FreeSurface(tile_map);
 }
 
+extern uint8_t keyboard[8];
 void poll_events()
 {
     SDL_Event e;
@@ -96,8 +110,70 @@ void poll_events()
                 dump_mem();
             } else if (e.key.keysym.sym == SDLK_1) {
                 print_reg();
-            } else
-                printf("keydown key sym: %d\n", e.key.keysym.sym);
+            } else {
+                printf("keydown key sym: %d\n", (int32_t)e.key.keysym.sym);
+                //97, 100, 119, 115, 106, 107, 117, 105
+                switch (e.key.keysym.sym) {
+                    case 97:
+                        keyboard[1] = 1;
+                        break;
+                    case 100:
+                        keyboard[0] = 1;
+                        break;
+                    case 119:
+                        keyboard[2] = 1;
+                        break;
+                    case 115:
+                        keyboard[3] = 1;
+                        break;
+                    case 106:
+                        keyboard[4] = 1;
+                        break;
+                    case 107:
+                        keyboard[5] = 1;
+                        break;
+                    case 117:
+                        keyboard[6] = 1;
+                        break;
+                    case 105:
+                        keyboard[7] = 1;
+                        break;
+                }
+
+
+
+            }
+        }
+        if (e.type == SDL_KEYUP) {
+            printf("keyup key sym: %d\n", (int32_t)e.key.keysym.sym);
+            //97, 100, 119, 115, 106, 107, 117, 105
+            switch (e.key.keysym.sym) {
+                    case 97:
+                        keyboard[1] = 0;
+                        break;
+                    case 100:
+                        keyboard[0] = 0;
+                        break;
+                    case 119:
+                        keyboard[2] = 0;
+                        break;
+                    case 115:
+                        keyboard[3] = 0;
+                        break;
+                    case 106:
+                        keyboard[4] = 0;
+                        break;
+                    case 107:
+                        keyboard[5] = 0;
+                        break;
+                    case 117:
+                        keyboard[6] = 0;
+                        break;
+                    case 105:
+                        keyboard[7] = 0;
+                        break;
+            }
+
         }
     }
 }
@@ -165,6 +241,7 @@ int32_t init_dbg_window(struct dbg_window *dbg_win)
     //get debug window surface
     dbg_win->surface = SDL_GetWindowSurface(dbg_win->window);
     
+    return 0;
 }
 //draw debug window
 int32_t draw_dbg_window(struct dbg_window *dbg_win)
@@ -188,6 +265,7 @@ int32_t draw_dbg_window(struct dbg_window *dbg_win)
     //free text surface
     SDL_FreeSurface(text_surface);
 
+    return 0;
 }
 
 // debug debug interface

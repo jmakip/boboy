@@ -92,7 +92,7 @@ void assemble_bg_map()
                 uint16_t dot = mem_read16(tile_offset + 2 * ty);
                 for (i = 0; i < 8; i++) {
                     pix8[i] = ((dot & (0x80 >> i)) >> (7 - i)) * 32;
-                    pix8[i] |= ((dot & (0x8000 >> i)) >> 14 - i) * 32;
+                    pix8[i] |= ((dot & (0x8000 >> i)) >> (14 - i)) * 32;
                     pix8[i] += (pix8[i] << 16) + (pix8[i] << 8);
                     pix8[i] ^= 0x00FFFFFF;
                 }
@@ -102,6 +102,43 @@ void assemble_bg_map()
             }
             index++;
         }
+    }
+}
+void draw_sprite(uint8_t y, uint8_t x, uint8_t tile, uint8_t attr)
+{
+    if (y > 143-8 || x > 159-8) return;
+    //only handle 8x8 sprites for now. dont read LCDC_CTRL 
+    //also dont flip or do priority
+    //also ignore y coordinate offset for now
+    for (int ty = 0; ty < 8; ty++) {
+        uint32_t pix8[8];
+        uint16_t dot = mem_read16(0x8000 + tile*8*2 + ty*2);
+        for (int i = 0; i < 8; i++) {
+            pix8[i] = ((dot & (0x80 >> i)) >> (7 - i)) * 32;
+            pix8[i] |= ((dot & (0x8000 >> i)) >> (14 - i)) * 32;
+            pix8[i] += (pix8[i] << 16) + (pix8[i] << 8);
+            pix8[i] ^= 0x00FFFFFF;
+        }
+        //if y - 16 + ty > 0 && if y - 16 + ty < 160 skip
+        uint32_t coord = x  + y * 256 + ty * 256;
+        memcpy( &(bg_map[coord]), pix8, 8 * 4);
+    }
+}
+void draw_sprites()
+{
+    uint8_t sprite_y;
+    uint8_t sprite_x;
+    uint8_t tile;
+    uint8_t attr;
+    //there can be up to 40 sprites in OAM memory
+    //y is screen + 16
+    for (int i = 0; i < 40; i++) {
+        //read sprint info from OAM
+        sprite_y = mem_read(0xFE00 + i * 4);
+        sprite_x = mem_read(0xFE00 + i * 4 + 1);
+        tile = mem_read(0xFE00 + i * 4 + 2);
+        attr = mem_read(0xFE00 + i * 4 + 3);
+        draw_sprite(sprite_y, sprite_x, tile, attr);
     }
 }
 

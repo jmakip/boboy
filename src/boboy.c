@@ -89,6 +89,7 @@ int main(int argc, char **argv)
             if (!gpu_cycle()) {
                 poll_events();
                 render_tilemap();
+                dump_OAM();
             }
 
             if (!next_cycle) next_cycle = cpu_cycle();
