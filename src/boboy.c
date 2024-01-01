@@ -29,6 +29,7 @@ int main(int argc, char **argv)
     int dissamble = 0;
     int step = 0;
     int disassemble = 0;
+    int print_hdr = 0;
     int opt;
     struct gbc_cart *cart;
 
@@ -38,7 +39,7 @@ int main(int argc, char **argv)
     // -b for breakpoints enabled
     // -S for dissasembly output enabled
     // -s for step mode
-    while ((opt = getopt(argc, argv, "dbsS")) != -1) {
+    while ((opt = getopt(argc, argv, "bdpsS")) != -1) {
         switch (opt) {
         case 'd':
             debug = 1;
@@ -52,8 +53,11 @@ int main(int argc, char **argv)
         case 'S':
             disassemble = 1;
             break;
+        case 'p':
+            print_hdr = 1;
+            break;
         default:
-            fprintf(stderr, "Usage: %s [-dbsS] [romfile]", argv[0]);
+            fprintf(stderr, "Usage: %s [-bdpsS] [romfile]", argv[0]);
             exit(EXIT_FAILURE);
         }
     }
@@ -70,7 +74,10 @@ int main(int argc, char **argv)
     // load the rom file
     cart = load_rom(rom_path);
     // DEBUG: print the rom header
-    if (cart) print_cart_hdr(&cart->rom.bank0.hdr);
+    if (cart && print_hdr) {
+        print_cart_hdr(&cart->rom.bank0.hdr);
+        return 0;
+    }
 
     // opens the SDL window
     init_window();
@@ -89,7 +96,7 @@ int main(int argc, char **argv)
             if (!gpu_cycle()) {
                 poll_events();
                 render_tilemap();
-                dump_OAM();
+                //dump_OAM();
             }
 
             if (!next_cycle) next_cycle = cpu_cycle();
