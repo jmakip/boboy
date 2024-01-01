@@ -11,7 +11,7 @@ enum {
     LCDC_CTRL = 0xFF40,
     LCDC_STAT = 0xFF41,
     LCDC_SCY = 0xFF42,
-    LCDC_SCX = 0xFF42,
+    LCDC_SCX = 0xFF43,
     LCDC_LY = 0xFF44,
     LCDC_LYC = 0xFF45,
     LCDC_PGB = 0xFF47,
@@ -104,24 +104,47 @@ void assemble_bg_map()
         }
     }
 }
+
 void draw_sprite(uint8_t y, uint8_t x, uint8_t tile, uint8_t attr)
 {
-    if (y > 143-8 || x > 159-8) return;
+    int16_t y_bg = ((int16_t)y) - 16;
+    int16_t x_bg = ((int16_t)x) - 8;
+    if ( x_bg <= -8 || x_bg >= 160) return;
+    if ( y_bg <= -8 || y_bg >= 144) return;
+
+    //hack scroll sprites instead of bg
+    int8_t scy = mem_read(LCDC_SCY);
+    int8_t scx = mem_read(LCDC_SCX);
+    y_bg += scy;
+    x_bg += scx;
     //only handle 8x8 sprites for now. dont read LCDC_CTRL 
     //also dont flip or do priority
     //also ignore y coordinate offset for now
     for (int ty = 0; ty < 8; ty++) {
         uint32_t pix8[8];
         uint16_t dot = mem_read16(0x8000 + tile*8*2 + ty*2);
+        if (y_bg + ty < 0 || y_bg + ty > 255) continue;
         for (int i = 0; i < 8; i++) {
-            pix8[i] = ((dot & (0x80 >> i)) >> (7 - i)) * 32;
-            pix8[i] |= ((dot & (0x8000 >> i)) >> (14 - i)) * 32;
-            pix8[i] += (pix8[i] << 16) + (pix8[i] << 8);
-            pix8[i] ^= 0x00FFFFFF;
+            uint32_t coord = x_bg + i  + (y_bg + ty) * 256;
+            if ( dot & (0x80 >> i) || dot & (0x8000 >> i) ) {
+                pix8[i] = ((dot & (0x80 >> i)) >> (7 - i)) * 32;
+                pix8[i] |= ((dot & (0x8000 >> i)) >> (14 - i)) * 32;
+                pix8[i] += (pix8[i] << 10) + (pix8[i] << 8);
+                pix8[i] ^= 0x00FFFFFF;
+                //if (x_bg + i < 0 || x_bg + i > 160) continue;
+                //if (x_bg + i < 0 || x_bg + i > 255) continue;
+                if (attr & 0x20) //X flip
+                    coord = x_bg + (7 - i)  + (y_bg + ty) * 256;
+                //if (attr & 0x80) //priority
+                //    continue;
+
+                if (coord >= 65536) {
+                    printf("bug bug coord %d\n", coord);
+                    continue;
+                }
+                memcpy( &(bg_map[coord]), &pix8[i], 4);
+            }
         }
-        //if y - 16 + ty > 0 && if y - 16 + ty < 160 skip
-        uint32_t coord = x  + y * 256 + ty * 256;
-        memcpy( &(bg_map[coord]), pix8, 8 * 4);
     }
 }
 void draw_sprites()

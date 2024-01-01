@@ -1,4 +1,6 @@
 #include "irq.h"
+#include "mem.h"
+#include "common.h"
 
 void irq_request(uint8_t irq)
 {
@@ -35,6 +37,7 @@ void irq_request(uint8_t irq)
 //
 unsigned start_isr(uint8_t irq)
 {
+    UNUSED(irq);
     //mem_write(cpu.SP, cpu.PC)
     //cpu.SP++;
     //cpu.PC = 0x0000 + irq;
