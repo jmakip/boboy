@@ -42,7 +42,7 @@ struct gbc_cart_hdr {
 };
 
 struct rom_bank {
-    uint8_t data[0x8000];
+    uint8_t data[0x4000];
 };
 
 struct rom_bank0 {
