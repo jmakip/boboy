@@ -39,7 +39,7 @@ struct mem_map {
 struct mem_map map;
 struct gbc_cart *cart = 0;
 
-uint8_t keyboard[0] = {0};
+uint8_t keyboard[8] = {0};
 uint8_t read_joystick() 
 {
     uint8_t *data = (uint8_t *)&map;
@@ -95,7 +95,8 @@ void mem_write(uint16_t addr, uint8_t d)
 
         d &= 0x7F;
     } else if (addr >= 0x2000 && addr <= 0x3FFF) {
-        printf("TODO SWITCHING ROM BANK 0x%02X\n", d);
+        printf("SWITCHING ROM BANK 0x%02X\n", d);
+        memcpy(map.rom_bank01, &cart->rom.bank[d], 0x4000);
         print_reg();
         return;
     } else if (addr >= 0x4000 && addr <= 0x5FFF) {
@@ -114,11 +115,13 @@ void mem_write16(uint16_t addr, uint16_t d)
     //TODO add some checks
     //only spesific areas should be writable,
     //and some areas should trigger bank changes etc.
-    uint16_t *p;
-    uint8_t *data = (uint8_t *)&map;
-    data += addr;
-    p = (uint16_t *)data; //not sure are unaligned access ok
-    p[0] = d;
+//    uint16_t *p;
+//    uint8_t *data = (uint8_t *)&map;
+//    data += addr;
+//    p = (uint16_t *)data; //not sure are unaligned access ok
+//    p[0] = d;
+    mem_write(addr, d & 0xFF);
+    mem_write(addr + 1, (d >> 8) & 0xFF);
 }
 
 void dump_mem()
