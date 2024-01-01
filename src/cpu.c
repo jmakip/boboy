@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "common.h"
 
 //#define BUGBUG 1
 
 //suppress warnings when variable is not used
-#define UNUSED(x) (void)(x)
 #define FLAG_Z    0x80
 #define FLAG_N    0x40
 #define FLAG_H    0x20
