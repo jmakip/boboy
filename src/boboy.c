@@ -104,7 +104,7 @@ int main(int argc, char **argv)
             next_cycle--;
         }
     } else if (debug) {
-        debug_window_init();
+        //debug_window_init();
         // run the cpu in debug mode
         while (1) {
             timer_tick();
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
             if (!next_cycle) next_cycle = cpu_cycle();
 
             next_cycle--;
-            debug_window_update();
+            //debug_window_update();
             // wait for a keypress after each instruction
             //getchar();
         }

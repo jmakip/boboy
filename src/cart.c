@@ -1,8 +1,11 @@
 #include "cart.h"
 
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 #include <fcntl.h>
 
 struct gbc_cart *load_rom(const char *path)
@@ -28,7 +31,7 @@ struct gbc_cart *load_rom(const char *path)
 
 void print_cart_hdr(struct cart_hdr *hdr)
 {
-    struct gbc_cart_hdr *gbc_hdr = hdr;
+    struct gbc_cart_hdr *gbc_hdr = (struct gbc_cart_hdr *)hdr;
     if (!hdr) return;
 
     printf("entry_point: %02X %02X %02X %02X\n", hdr->entry_point[0],

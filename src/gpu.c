@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "gpu.h"
 #include "cpu.h"
@@ -37,6 +39,15 @@ enum {
 #define STAT_V_IE     0x10 // V_BLANK irq enable
 #define STAT_OAM_IE   0x20 // OAM irq enable
 #define STAT_COINC_IE 0x40 // LYC==LY irq enable
+
+//OAM attr bits
+#define ATTR_PRI     0x80 //0 no, 1 bg drawn over
+#define ATTR_Y_FLIP  0x40
+#define ATTR_X_FLIP  0x20
+#define ATTR_PAL     0x10 //DMG only
+#define ATTR_BANK    0x08 //GBC only
+#define ATTR_GBC_PAL 0x07 //GBC only,PAL
+
 
 //STAT_MODE BITS
 enum { H_BLANK = 0, V_BLANK = 1, OAM = 2, OAM_VRAM = 3 };

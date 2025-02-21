@@ -1,7 +1,6 @@
 #ifndef __CART_H_
 #define __CART_H_
 
-#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -52,7 +51,7 @@ struct rom_bank0 {
 };
 
 struct ram_bank {
-    uint8_t data[0x800];
+    uint8_t data[0x2000];
 };
 union rom_banks {
     struct rom_bank0 bank0;

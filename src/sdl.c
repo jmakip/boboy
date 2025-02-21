@@ -1,5 +1,5 @@
 #include <SDL2/SDL.h>
-#include <SDL_ttf.h>
+//#include <SDL_ttf.h>
 #include "mem.h"
 #include "gpu.h"
 #include "sdl.h"
@@ -109,7 +109,7 @@ void poll_events()
                 printf("dumping memory\n");
                 dump_mem();
             } else if (e.key.keysym.sym == SDLK_1) {
-                print_reg();
+                //print_reg();
             } else {
                 printf("keydown key sym: %d\n", (int32_t)e.key.keysym.sym);
                 //97, 100, 119, 115, 106, 107, 117, 105
@@ -193,6 +193,8 @@ struct texture {
 //it is updated every time the cpu is stepped on debug mode
 //window is created using SDL2
 //Debug info is displayed as text and text is rendered using SDL2_ttf
+//
+/*
 struct dbg_window {
     SDL_Window *window; //Debug window
     SDL_Renderer *renderer; //Debug window renderer
@@ -211,8 +213,7 @@ int32_t init_dbg_window(struct dbg_window *dbg_win)
         return -1;
     }
     //initialize SDL2
-    //if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    //    printf("Could not initialize SDL2: %s\n", SDL_GetError());
+    //if (SDL_Init(SDL_INIT_VIDEO) < 0) { printf("Could not initialize SDL2: %s\n", SDL_GetError());
     //    return -1;
     //}
     //create debug window
@@ -281,4 +282,5 @@ void debug_window_update()
 
 
 
+*/
 

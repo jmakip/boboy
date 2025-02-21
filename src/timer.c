@@ -43,7 +43,7 @@ void timer_tick()
     tim.div_count = (tim.div_count + 1u) & 0x3FFFFFu;
     mem_write(DIVIDER_COUNT, (uint8_t)((tim.div_count >> 14) & 0xFFu));
 
-    if ((tac & TIM_ENABLE) != NULL) {
+    if ((tac & TIM_ENABLE) != 0x00u) {
         switch (tac & TIM_DIV_MASK) {
         case TIM_DIV1024:
             tim.tim_arr = 1024;

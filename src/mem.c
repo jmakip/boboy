@@ -1,6 +1,7 @@
 #include <string.h>
 #include "cart.h"
 #include "cpu.h"
+#include "mem.h"
 
 //General Memory Map
 //  0000-3FFF   16KB ROM Bank 00     (in cartridge, fixed at bank 00)
@@ -44,7 +45,7 @@ uint8_t read_joystick()
 {
     uint8_t *data = (uint8_t *)&map;
     uint8_t button = 0x00;
-    if ((data[JOYP1]) & 0x30 == 0x30) return 0x0F;
+    if (((data[JOYP1]) & 0x30) == 0x30) return 0x0F;
     else if (data[JOYP1] & 0x20) {
         button = 0x00;
         for (int i = 0; i < 4; i++) {
@@ -83,7 +84,7 @@ void mem_write(uint16_t addr, uint8_t d)
     //and some areas should trigger bank changes etc.
     uint8_t *data = (uint8_t *)&map;
     if (addr == OAM_DMA) {
-        printf("OAM DMA\n");
+        //printf("OAM DMA\n");
         memcpy(data + 0XFE00, data + ((uint16_t)(d) << 8), 0xF1);
     }
     if (addr == SERIAL_SC) {
@@ -94,12 +95,20 @@ void mem_write(uint16_t addr, uint8_t d)
         }
 
         d &= 0x7F;
+    } else if (addr >= 0x000 && addr <= 0x1FFF) {
+        printf("RAM ENABLE 0x%02X\n", d);
+        print_reg();
+        return;
     } else if (addr >= 0x2000 && addr <= 0x3FFF) {
         printf("SWITCHING ROM BANK 0x%02X\n", d);
         memcpy(map.rom_bank01, &cart->rom.bank[d], 0x4000);
         print_reg();
         return;
     } else if (addr >= 0x4000 && addr <= 0x5FFF) {
+        static uint8_t bank = 0;
+        memcpy(cart->ram.bank[bank].data, map.extram, 0x2000);
+        memcpy(map.extram, cart->ram.bank[d].data, 0x2000);
+        bank = d;
         printf("TODO SWITCHING RAM BANK 0x%02X\n", d);
         print_reg();
         return;
@@ -139,6 +148,7 @@ void mem_mmap(struct gbc_cart *cartridge)
     ////DEBUG
     memcpy(map.rom_bank00, &cart->rom.bank0, 0x8000);
 }
+
 void mem_munmap()
 {
     cart = 0;

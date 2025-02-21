@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include "common.h"
+#include "mem.h"
 
 //#define BUGBUG 1
 
@@ -1812,7 +1814,7 @@ unsigned cb(uint8_t op0, uint8_t op1, uint8_t op2)
     case 0xFF: r8->A |= 0x80; break;
     default:
         printf("TODO CB %02X\n", op1);
-        exit(2);
+        //exit(2);
     }
     UNUSED(op1);
     UNUSED(op2);
@@ -4273,7 +4275,7 @@ unsigned cpu_cycle()
             interrupt &= ~(0x10);
             irq = 0x60;
         }
-        //printf("INTERRUPT %02X\n",irq);
+        printf("INTERRUPT %02X\n",irq);
         mem_write(0xFF0F, interrupt);
         cycles = start_isr(irq);
         goto skip_load;
@@ -4303,7 +4305,7 @@ unsigned cpu_cycle()
         dbg_pc_sp();
         dbg_reg();
         dbg_op(*op, op[1], op[2]);
-        exit(1);
+        //exit(1);
     }
 
 skip_load:
